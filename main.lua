@@ -1,5 +1,5 @@
-if getgenv().StableModernHub then return end
-getgenv().StableModernHub=true
+if getgenv().ModernStableHub then return end
+getgenv().ModernStableHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -26,10 +26,11 @@ FOV=150
 }
 
 -------------------------------------------------
--- UI
+-- UI SYSTEM
 -------------------------------------------------
 
 local gui=Instance.new("ScreenGui")
+gui.Name="ModernHub"
 gui.Parent=game.CoreGui
 
 local frame=Instance.new("Frame",gui)
@@ -46,48 +47,36 @@ stroke.Color=Color3.fromRGB(0,170,255)
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,40)
 title.BackgroundTransparency=1
-title.Text="Stable Hub"
+title.Text="Modern Script Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=20
 
 -------------------------------------------------
--- MOBILE BUTTON
+-- BUTTON CONTAINER
 -------------------------------------------------
 
-local mobile=Instance.new("TextButton",gui)
-mobile.Size=UDim2.new(0,40,0,40)
-mobile.Position=UDim2.new(.5,-20,0,10)
-mobile.Text="-"
-mobile.BackgroundColor3=Color3.fromRGB(35,35,35)
+local container=Instance.new("Frame",frame)
+container.Size=UDim2.new(1,-20,1,-50)
+container.Position=UDim2.new(0,10,0,45)
+container.BackgroundTransparency=1
 
-mobile.MouseButton1Click:Connect(function()
-frame.Visible=not frame.Visible
-end)
+local layout=Instance.new("UIListLayout",container)
+layout.Padding=UDim.new(0,8)
 
 -------------------------------------------------
--- PC HIDE
+-- TOGGLE BUTTON
 -------------------------------------------------
 
-UIS.InputBegan:Connect(function(i,g)
-if g then return end
-if i.KeyCode==Enum.KeyCode.K then
-frame.Visible=not frame.Visible
-end
-end)
+local function Toggle(text,setting)
 
--------------------------------------------------
--- BUTTON SYSTEM
--------------------------------------------------
-
-local function Toggle(text,y,setting)
-
-local b=Instance.new("TextButton",frame)
-b.Size=UDim2.new(0,210,0,32)
-b.Position=UDim2.new(0,25,0,y)
+local b=Instance.new("TextButton",container)
+b.Size=UDim2.new(1,0,0,32)
 b.BackgroundColor3=Color3.fromRGB(35,35,35)
-b.Text=text
 b.TextColor3=Color3.new(1,1,1)
+b.Font=Enum.Font.Gotham
+b.TextSize=14
+b.Text=text
 
 Instance.new("UICorner",b)
 
@@ -112,14 +101,15 @@ end)
 
 end
 
-local function Button(text,y,func)
+local function Button(text,func)
 
-local b=Instance.new("TextButton",frame)
-b.Size=UDim2.new(0,210,0,32)
-b.Position=UDim2.new(0,25,0,y)
+local b=Instance.new("TextButton",container)
+b.Size=UDim2.new(1,0,0,32)
 b.BackgroundColor3=Color3.fromRGB(35,35,35)
-b.Text=text
 b.TextColor3=Color3.new(1,1,1)
+b.Font=Enum.Font.Gotham
+b.TextSize=14
+b.Text=text
 
 Instance.new("UICorner",b)
 
@@ -128,7 +118,43 @@ b.MouseButton1Click:Connect(func)
 end
 
 -------------------------------------------------
--- FLY
+-- MOBILE HIDE BUTTON
+-------------------------------------------------
+
+local hide=Instance.new("TextButton",gui)
+hide.Size=UDim2.new(0,26,0,26)
+hide.Position=UDim2.new(0,8,0,8)
+
+hide.BackgroundColor3=Color3.fromRGB(30,30,30)
+hide.BackgroundTransparency=0.35
+
+hide.Text="-"
+hide.TextColor3=Color3.fromRGB(200,200,200)
+hide.Font=Enum.Font.GothamBold
+hide.TextSize=18
+
+Instance.new("UICorner",hide)
+
+hide.MouseButton1Click:Connect(function()
+frame.Visible=not frame.Visible
+end)
+
+-------------------------------------------------
+-- PC HIDE
+-------------------------------------------------
+
+UIS.InputBegan:Connect(function(i,g)
+
+if g then return end
+
+if i.KeyCode==Enum.KeyCode.K then
+frame.Visible=not frame.Visible
+end
+
+end)
+
+-------------------------------------------------
+-- FLY SYSTEM
 -------------------------------------------------
 
 local control={F=0,B=0,L=0,R=0,U=0,D=0}
@@ -210,21 +236,173 @@ end
 end)
 
 -------------------------------------------------
+-- ESP
+-------------------------------------------------
+
+local ESPFolder=Instance.new("Folder",game.CoreGui)
+
+local function CreateESP(player)
+
+if player==LP then return end
+
+local function add(char)
+
+local h=Instance.new("Highlight")
+h.Name=player.Name
+h.Parent=ESPFolder
+h.Adornee=char
+
+end
+
+if player.Character then
+add(player.Character)
+end
+
+player.CharacterAdded:Connect(add)
+
+end
+
+for _,p in pairs(Players:GetPlayers()) do
+CreateESP(p)
+end
+
+Players.PlayerAdded:Connect(CreateESP)
+
+RunService.RenderStepped:Connect(function()
+
+for _,h in pairs(ESPFolder:GetChildren()) do
+
+local p=Players:FindFirstChild(h.Name)
+
+if p and Settings.ESP then
+
+if p.Team==LP.Team then
+h.FillColor=Color3.fromRGB(0,255,0)
+else
+h.FillColor=Color3.fromRGB(255,0,0)
+end
+
+h.Enabled=true
+
+else
+h.Enabled=false
+end
+
+end
+
+end)
+
+-------------------------------------------------
+-- TARGET
+-------------------------------------------------
+
+local function GetTarget()
+
+local closest=nil
+local dist=Settings.FOV
+
+for _,p in pairs(Players:GetPlayers()) do
+
+if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
+
+local hum=p.Character:FindFirstChildOfClass("Humanoid")
+
+if Settings.KillCheck and (not hum or hum.Health<=0) then
+continue
+end
+
+local head=p.Character.Head
+
+local pos,vis=Camera:WorldToViewportPoint(head.Position)
+
+if vis then
+
+local diff=(Vector2.new(pos.X,pos.Y)-
+Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
+
+if diff<dist then
+dist=diff
+closest=head
+end
+
+end
+
+end
+
+end
+
+return closest
+
+end
+
+-------------------------------------------------
+-- AIMBOT
+-------------------------------------------------
+
+RunService.RenderStepped:Connect(function()
+
+if Settings.Aimbot then
+
+local target=GetTarget()
+
+if target then
+Camera.CFrame=CFrame.new(Camera.CFrame.Position,target.Position)
+end
+
+end
+
+end)
+
+-------------------------------------------------
+-- SILENT AIM
+-------------------------------------------------
+
+local mt=getrawmetatable(game)
+local old=mt.__index
+setreadonly(mt,false)
+
+mt.__index=newcclosure(function(self,key)
+
+if self==Mouse and key=="Hit" and Settings.SilentAim then
+
+local t=GetTarget()
+
+if t then
+return CFrame.new(t.Position)
+end
+
+end
+
+return old(self,key)
+
+end)
+
+setreadonly(mt,true)
+
+-------------------------------------------------
 -- BUTTONS
 -------------------------------------------------
 
-Toggle("Fly",60,"Fly")
-Toggle("Noclip",100,"Noclip")
-Toggle("ESP",140,"ESP")
-Toggle("Aimbot",180,"Aimbot")
-Toggle("Silent Aim",220,"SilentAim")
-Toggle("Wall Check",260,"WallCheck")
-Toggle("Kill Check",300,"KillCheck")
+Toggle("Fly","Fly")
+Toggle("Noclip","Noclip")
+Toggle("ESP","ESP")
+Toggle("Aimbot","Aimbot")
+Toggle("Silent Aim","SilentAim")
+Toggle("Wall Check","WallCheck")
+Toggle("Kill Check","KillCheck")
 
-Button("Fly Speed +",340,function()
+Button("Fly Speed +",function()
 Settings.FlySpeed+=20
 end)
 
-Button("Fly Speed -",380,function()
+Button("Fly Speed -",function()
 Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
+end)
+
+Button("FOV +",function()
+Settings.FOV+=10
+end)
+
+Button("FOV -",function()
+Settings.FOV=math.max(50,Settings.FOV-10)
 end)
