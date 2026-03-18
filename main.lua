@@ -1,5 +1,5 @@
-if getgenv().StableHubV2 then return end
-getgenv().StableHubV2=true
+if getgenv().StableHubESP then return end
+getgenv().StableHubESP=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -21,28 +21,15 @@ FlySpeed=80,
 FOV=150
 }
 
--- FOV
-local circle=Drawing.new("Circle")
-circle.Color=Color3.fromRGB(0,170,255)
-circle.Thickness=2
-circle.NumSides=60
-circle.Filled=false
-
-RunService.RenderStepped:Connect(function()
-
-local size=Camera.ViewportSize
-circle.Position=Vector2.new(size.X/2,size.Y/2)
-circle.Radius=Settings.FOV
-circle.Visible=Settings.Aimbot
-
-end)
-
+-------------------------------------------------
 -- UI
+-------------------------------------------------
+
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,460)
-frame.Position=UDim2.new(.5,-120,.5,-230)
+frame.Size=UDim2.new(0,230,0,440)
+frame.Position=UDim2.new(.5,-115,.5,-220)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -74,11 +61,14 @@ frame.Visible=not frame.Visible
 end
 end)
 
--- button
+-------------------------------------------------
+-- BUTTON SYSTEM
+-------------------------------------------------
+
 local function Button(text,y,func)
 
 local b=Instance.new("TextButton",frame)
-b.Size=UDim2.new(0,200,0,30)
+b.Size=UDim2.new(0,190,0,30)
 b.Position=UDim2.new(0,20,0,y)
 b.Text=text
 b.BackgroundColor3=Color3.fromRGB(35,35,35)
@@ -89,7 +79,6 @@ b.MouseButton1Click:Connect(func)
 return b
 end
 
--- toggle
 local function Toggle(text,y,setting)
 
 local b=Button(text,y)
@@ -115,21 +104,56 @@ end)
 
 end
 
--- ESP
-local function AddESP(p)
+-------------------------------------------------
+-- ESP SYSTEM
+-------------------------------------------------
 
-if p==LP then return end
+local ESPFolder=Instance.new("Folder")
+ESPFolder.Name="ESP"
+ESPFolder.Parent=game.CoreGui
 
-p.CharacterAdded:Connect(function(char)
+local function CreateESP(player)
+
+if player==LP then return end
+
+local function add(char)
+
+local old=ESPFolder:FindFirstChild(player.Name)
+if old then old:Destroy() end
 
 local h=Instance.new("Highlight")
-h.Parent=char
+h.Name=player.Name
+h.Parent=ESPFolder
+h.Adornee=char
 
+end
+
+if player.Character then
+add(player.Character)
+end
+
+player.CharacterAdded:Connect(add)
+
+end
+
+for _,p in pairs(Players:GetPlayers()) do
+CreateESP(p)
+end
+
+Players.PlayerAdded:Connect(CreateESP)
+
+-- ESP update
 RunService.RenderStepped:Connect(function()
+
+for _,h in pairs(ESPFolder:GetChildren()) do
+
+local player=Players:FindFirstChild(h.Name)
+
+if player and player.Character then
 
 if Settings.ESP then
 
-if p.Team==LP.Team then
+if player.Team==LP.Team then
 h.FillColor=Color3.fromRGB(0,255,0)
 else
 h.FillColor=Color3.fromRGB(255,0,0)
@@ -141,35 +165,39 @@ else
 h.Enabled=false
 end
 
-end)
-
-end)
+end
 
 end
 
-for _,p in pairs(Players:GetPlayers()) do
-AddESP(p)
-end
+end)
 
-Players.PlayerAdded:Connect(AddESP)
+-------------------------------------------------
+-- WALL CHECK
+-------------------------------------------------
 
--- WallCheck
 local function WallCheck(part)
 
 local origin=Camera.CFrame.Position
-local direction=(part.Position-origin)
+local dir=(part.Position-origin)
 
 local params=RaycastParams.new()
 params.FilterType=Enum.RaycastFilterType.Blacklist
-params.FilterDescendantsInstances={LP.Character,part.Parent}
+params.FilterDescendantsInstances={LP.Character}
 
-local result=workspace:Raycast(origin,direction,params)
+local ray=workspace:Raycast(origin,dir,params)
 
-return not result
+if ray then
+return ray.Instance:IsDescendantOf(part.Parent)
+end
+
+return true
 
 end
 
--- Target
+-------------------------------------------------
+-- TARGET
+-------------------------------------------------
+
 local function GetTarget()
 
 local closest=nil
@@ -181,16 +209,12 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
--- KillCheck
-if Settings.KillCheck then
-if not hum or hum.Health<=0 then
+if Settings.KillCheck and (not hum or hum.Health<=0) then
 continue
-end
 end
 
 local head=p.Character.Head
 
--- WallCheck
 if Settings.WallCheck and not WallCheck(head) then
 continue
 end
@@ -199,7 +223,8 @@ local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
 if vis then
 
-local diff=(Vector2.new(pos.X,pos.Y)-circle.Position).Magnitude
+local diff=(Vector2.new(pos.X,pos.Y)-
+Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
 
 if diff<dist then
 dist=diff
@@ -216,7 +241,10 @@ return closest
 
 end
 
--- Aimbot
+-------------------------------------------------
+-- AIMBOT
+-------------------------------------------------
+
 RunService.RenderStepped:Connect(function()
 
 if Settings.Aimbot then
@@ -231,7 +259,10 @@ end
 
 end)
 
--- Silent Aim
+-------------------------------------------------
+-- SILENT AIM
+-------------------------------------------------
+
 local mt=getrawmetatable(game)
 local old=mt.__index
 setreadonly(mt,false)
@@ -240,10 +271,10 @@ mt.__index=newcclosure(function(self,key)
 
 if self==Mouse and key=="Hit" and Settings.SilentAim then
 
-local target=GetTarget()
+local t=GetTarget()
 
-if target then
-return CFrame.new(target.Position)
+if t then
+return CFrame.new(t.Position)
 end
 
 end
@@ -254,7 +285,26 @@ end)
 
 setreadonly(mt,true)
 
--- buttons
+-------------------------------------------------
+-- NOCLIP
+-------------------------------------------------
+
+RunService.Stepped:Connect(function()
+
+if Settings.Noclip and LP.Character then
+for _,v in pairs(LP.Character:GetDescendants()) do
+if v:IsA("BasePart") then
+v.CanCollide=false
+end
+end
+end
+
+end)
+
+-------------------------------------------------
+-- BUTTONS
+-------------------------------------------------
+
 Toggle("Fly",60,"Fly")
 Toggle("Noclip",100,"Noclip")
 Toggle("ESP",140,"ESP")
