@@ -1,5 +1,5 @@
-if getgenv().FinalCombatHub then return end
-getgenv().FinalCombatHub=true
+if getgenv().LiteHub then return end
+getgenv().LiteHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -32,27 +32,29 @@ FOV=150
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,360)
-frame.Position=UDim2.new(.5,-120,.5,-180)
-frame.BackgroundColor3=Color3.fromRGB(30,30,30)
+frame.Size=UDim2.new(0,220,0,320)
+frame.Position=UDim2.new(.5,-110,.5,-160)
+frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
+Instance.new("UICorner",frame)
 
 local layout=Instance.new("UIListLayout",frame)
 layout.Padding=UDim.new(0,6)
 
 -------------------------------------------------
--- BUTTON SYSTEM
+-- BUTTON
 -------------------------------------------------
 
 local function Toggle(name,setting)
 
 local b=Instance.new("TextButton",frame)
 b.Size=UDim2.new(1,-10,0,30)
-b.BackgroundColor3=Color3.fromRGB(40,40,40)
+b.BackgroundColor3=Color3.fromRGB(35,35,35)
 b.TextColor3=Color3.new(1,1,1)
-b.Font=Enum.Font.SourceSans
-b.TextSize=16
+b.Font=Enum.Font.Gotham
+b.TextSize=14
+Instance.new("UICorner",b)
 
 local function refresh()
 
@@ -79,11 +81,12 @@ local function Button(name,func)
 
 local b=Instance.new("TextButton",frame)
 b.Size=UDim2.new(1,-10,0,30)
-b.BackgroundColor3=Color3.fromRGB(40,40,40)
+b.BackgroundColor3=Color3.fromRGB(35,35,35)
 b.TextColor3=Color3.new(1,1,1)
-b.Font=Enum.Font.SourceSans
-b.TextSize=16
+b.Font=Enum.Font.Gotham
+b.TextSize=14
 b.Text=name
+Instance.new("UICorner",b)
 
 b.MouseButton1Click:Connect(func)
 
@@ -96,8 +99,9 @@ end
 local hide=Instance.new("TextButton",gui)
 hide.Size=UDim2.new(0,24,0,24)
 hide.Position=UDim2.new(0,6,0,6)
-hide.BackgroundColor3=Color3.fromRGB(30,30,30)
+hide.BackgroundColor3=Color3.fromRGB(25,25,25)
 hide.Text="-"
+Instance.new("UICorner",hide)
 
 hide.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
@@ -111,7 +115,7 @@ end
 end)
 
 -------------------------------------------------
--- FOV CIRCLE
+-- FOV
 -------------------------------------------------
 
 local circle=Drawing.new("Circle")
@@ -119,22 +123,14 @@ circle.Thickness=2
 circle.Filled=false
 circle.Color=Color3.fromRGB(0,170,255)
 
-RunService.RenderStepped:Connect(function()
-
-circle.Position=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
-circle.Radius=Settings.FOV
-circle.Visible=Settings.Aimbot
-
-end)
-
 -------------------------------------------------
--- TARGET SYSTEM
+-- TARGET
 -------------------------------------------------
 
 local function GetTarget()
 
 local closest=nil
-local shortest=Settings.FOV
+local dist=Settings.FOV
 
 for _,p in pairs(Players:GetPlayers()) do
 
@@ -142,43 +138,21 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
--- Kill Check
-if Settings.KillCheck then
-if not hum or hum.Health<=0 then
+if Settings.KillCheck and (not hum or hum.Health<=0) then
 continue
-end
 end
 
 local head=p.Character.Head
 
--- Wall Check
-if Settings.WallCheck then
+local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
-local rayParams=RaycastParams.new()
-rayParams.FilterType=Enum.RaycastFilterType.Blacklist
-rayParams.FilterDescendantsInstances={LP.Character}
+if vis then
 
-local ray=workspace:Raycast(
-Camera.CFrame.Position,
-(head.Position-Camera.CFrame.Position).Unit*500,
-rayParams
-)
-
-if ray and ray.Instance and not head:IsDescendantOf(ray.Instance.Parent) then
-continue
-end
-
-end
-
-local pos,visible=Camera:WorldToViewportPoint(head.Position)
-
-if visible then
-
-local dist=(Vector2.new(pos.X,pos.Y)
+local diff=(Vector2.new(pos.X,pos.Y)
 -Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
 
-if dist<shortest then
-shortest=dist
+if diff<dist then
+dist=diff
 closest=head
 end
 
@@ -193,10 +167,14 @@ return closest
 end
 
 -------------------------------------------------
--- AIMBOT
+-- MAIN LOOP
 -------------------------------------------------
 
 RunService.RenderStepped:Connect(function()
+
+circle.Position=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
+circle.Radius=Settings.FOV
+circle.Visible=Settings.Aimbot
 
 if Settings.Aimbot then
 
@@ -209,32 +187,6 @@ end
 end
 
 end)
-
--------------------------------------------------
--- SILENT AIM
--------------------------------------------------
-
-local mt=getrawmetatable(game)
-local old=mt.__index
-setreadonly(mt,false)
-
-mt.__index=newcclosure(function(self,key)
-
-if self==Mouse and key=="Hit" and Settings.SilentAim then
-
-local t=GetTarget()
-
-if t then
-return CFrame.new(t.Position)
-end
-
-end
-
-return old(self,key)
-
-end)
-
-setreadonly(mt,true)
 
 -------------------------------------------------
 -- FLY
@@ -294,39 +246,6 @@ end
 end)
 
 -------------------------------------------------
--- ESP
--------------------------------------------------
-
-local function AddESP(plr)
-
-if plr==LP then return end
-
-plr.CharacterAdded:Connect(function(char)
-
-if Settings.ESP then
-
-local h=Instance.new("Highlight")
-h.Parent=char
-
-if plr.Team==LP.Team then
-h.FillColor=Color3.fromRGB(0,255,0)
-else
-h.FillColor=Color3.fromRGB(255,0,0)
-end
-
-end
-
-end)
-
-end
-
-for _,p in pairs(Players:GetPlayers()) do
-AddESP(p)
-end
-
-Players.PlayerAdded:Connect(AddESP)
-
--------------------------------------------------
 -- BUTTONS
 -------------------------------------------------
 
@@ -335,8 +254,6 @@ Toggle("Noclip","Noclip")
 Toggle("ESP","ESP")
 Toggle("Aimbot","Aimbot")
 Toggle("Silent Aim","SilentAim")
-Toggle("Wall Check","WallCheck")
-Toggle("Kill Check","KillCheck")
 
 Button("Fly Speed +",function()
 Settings.FlySpeed+=20
