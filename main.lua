@@ -9,6 +9,8 @@ local LP=Players.LocalPlayer
 local Camera=workspace.CurrentCamera
 local Mouse=LP:GetMouse()
 
+local IsPC = not UIS.TouchEnabled
+
 local Settings={
 Aimbot=false,
 SilentAim=false,
@@ -18,7 +20,8 @@ Noclip=false,
 WallCheck=true,
 KillCheck=true,
 FlySpeed=80,
-FOV=150
+FOV=150,
+Smooth=0.18
 }
 
 -- FOV Circle
@@ -39,8 +42,8 @@ end)
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,250,0,520)
-frame.Position=UDim2.new(.5,-125,.5,-260)
+frame.Size=UDim2.new(0,250,0,480)
+frame.Position=UDim2.new(.5,-125,.5,-240)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -54,7 +57,7 @@ title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=22
 
--- Mobile Toggle
+-- Mobile toggle
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
@@ -67,7 +70,6 @@ mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Toggle
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -75,7 +77,7 @@ frame.Visible=not frame.Visible
 end
 end)
 
--- Button
+-- UI helpers
 local function Button(text,y,func)
 
 local b=Instance.new("TextButton",frame)
@@ -91,13 +93,11 @@ b.MouseButton1Click:Connect(func)
 return b
 end
 
--- Toggle (✔)
 local function Toggle(text,y,setting)
 
 local b=Button(text,y)
 
 local function update()
-
 if Settings[setting] then
 b.Text=text.." ✔"
 b.TextColor3=Color3.fromRGB(0,255,0)
@@ -105,7 +105,6 @@ else
 b.Text=text
 b.TextColor3=Color3.new(1,1,1)
 end
-
 end
 
 update()
@@ -123,8 +122,25 @@ end)
 
 end
 
--- Fly (PC + Mobile joystick)
+local y=60
+
+-- Fly PC only
 local flyBV=nil
+
+if IsPC then
+
+Toggle("Fly",y,"Fly")
+y+=40
+
+Button("Fly Speed +",y,function()
+Settings.FlySpeed+=20
+end)
+y+=40
+
+Button("Fly Speed -",y,function()
+Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
+end)
+y+=40
 
 RunService.Heartbeat:Connect(function()
 
@@ -163,21 +179,13 @@ end
 
 end)
 
-Toggle("Fly",60,"Fly")
-
-Button("Fly Speed +",100,function()
-Settings.FlySpeed+=20
-end)
-
-Button("Fly Speed -",140,function()
-Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
-end)
+end
 
 -- Noclip
-Toggle("Noclip",180,"Noclip")
+Toggle("Noclip",y,"Noclip")
+y+=40
 
 RunService.Stepped:Connect(function()
-
 if Settings.Noclip and LP.Character then
 for _,v in pairs(LP.Character:GetDescendants()) do
 if v:IsA("BasePart") then
@@ -185,18 +193,16 @@ v.CanCollide=false
 end
 end
 end
-
 end)
 
--- ESP
-Toggle("ESP",220,"ESP")
+-- ESP (Red Glow)
+Toggle("ESP",y,"ESP")
+y+=40
 
 task.spawn(function()
 
 while true do
 task.wait(0.5)
-
-if Settings.ESP then
 
 for _,p in pairs(Players:GetPlayers()) do
 
@@ -205,15 +211,21 @@ if p~=LP and p.Character then
 local char=p.Character
 local esp=char:FindFirstChild("Highlight")
 
+if Settings.ESP then
+
 if not esp then
 esp=Instance.new("Highlight")
 esp.Parent=char
+esp.FillColor=Color3.fromRGB(255,0,0)
+esp.OutlineColor=Color3.fromRGB(255,0,0)
+esp.FillTransparency=0.5
+esp.OutlineTransparency=0
 end
 
-if p.Team==LP.Team then
-esp.FillColor=Color3.fromRGB(0,255,0)
 else
-esp.FillColor=Color3.fromRGB(255,0,0)
+
+if esp then
+esp:Destroy()
 end
 
 end
@@ -226,7 +238,7 @@ end
 
 end)
 
--- Wall Check
+-- WallCheck
 local function WallCheck(part)
 
 local origin=Camera.CFrame.Position
@@ -238,21 +250,17 @@ params.FilterDescendantsInstances={LP.Character,part.Parent}
 
 local result=workspace:Raycast(origin,direction,params)
 
-if result then
-return false
-end
-
-return true
+return result==nil
 
 end
 
--- Target Finder
+-- Target finder
 local CurrentTarget=nil
 
 task.spawn(function()
 
 while true do
-task.wait(0.2)
+task.wait(0.08)
 
 local closest=nil
 local dist=Settings.FOV
@@ -263,14 +271,12 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
--- Kill Check
 if Settings.KillCheck then
 if not hum or hum.Health<=0 then continue end
 end
 
 local head=p.Character.Head
 
--- Wall Check
 if Settings.WallCheck and not WallCheck(head) then
 continue
 end
@@ -298,44 +304,58 @@ end
 
 end)
 
-Toggle("Aimbot",260,"Aimbot")
+-- Aimbot
+Toggle("Aimbot",y,"Aimbot")
+y+=40
 
 RunService.RenderStepped:Connect(function()
 
 if Settings.Aimbot and CurrentTarget then
-Camera.CFrame=CFrame.new(Camera.CFrame.Position,CurrentTarget.Position)
+
+local targetCF=CFrame.new(Camera.CFrame.Position,CurrentTarget.Position)
+Camera.CFrame=Camera.CFrame:Lerp(targetCF,Settings.Smooth)
+
 end
 
 end)
 
 -- Silent Aim
-Toggle("Silent Aim",300,"SilentAim")
+Toggle("Silent Aim",y,"SilentAim")
+y+=40
 
 local mt=getrawmetatable(game)
-local old=mt.__index
+local old=mt.__namecall
 setreadonly(mt,false)
 
-mt.__index=newcclosure(function(self,key)
+mt.__namecall=newcclosure(function(self,...)
 
-if self==Mouse and key=="Hit" and Settings.SilentAim then
-if CurrentTarget then
-return CFrame.new(CurrentTarget.Position)
-end
+local args={...}
+local method=getnamecallmethod()
+
+if Settings.SilentAim and CurrentTarget and method=="Raycast" then
+args[2]=(CurrentTarget.Position-args[1]).Unit*1000
+return old(self,unpack(args))
 end
 
-return old(self,key)
+return old(self,...)
 
 end)
 
 setreadonly(mt,true)
 
-Button("FOV +",340,function()
+Button("FOV +",y,function()
 Settings.FOV+=10
 end)
 
-Button("FOV -",380,function()
+y+=40
+
+Button("FOV -",y,function()
 Settings.FOV=math.max(50,Settings.FOV-10)
 end)
 
-Toggle("Wall Check",420,"WallCheck")
-Toggle("Kill Check",460,"KillCheck")
+y+=40
+
+Toggle("Wall Check",y,"WallCheck")
+y+=40
+
+Toggle("Kill Check",y,"KillCheck")
