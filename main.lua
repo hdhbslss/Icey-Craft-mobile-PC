@@ -1,5 +1,5 @@
-if getgenv().UniversalHubStable then return end
-getgenv().UniversalHubStable=true
+if getgenv().UniversalHubLite then return end
+getgenv().UniversalHubLite=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -21,7 +21,7 @@ FlySpeed=80,
 FOV=150
 }
 
--- FOV Circle
+-- FOV
 local circle=Drawing.new("Circle")
 circle.Color=Color3.fromRGB(0,170,255)
 circle.Thickness=2
@@ -39,8 +39,8 @@ end)
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,250,0,520)
-frame.Position=UDim2.new(.5,-125,.5,-260)
+frame.Size=UDim2.new(0,240,0,500)
+frame.Position=UDim2.new(.5,-120,.5,-250)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -54,7 +54,7 @@ title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=22
 
--- Mobile Hide
+-- Mobile Toggle
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
@@ -67,7 +67,7 @@ mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Hide
+-- PC Toggle
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -79,7 +79,7 @@ end)
 local function Button(text,y,func)
 
 local b=Instance.new("TextButton",frame)
-b.Size=UDim2.new(0,210,0,32)
+b.Size=UDim2.new(0,200,0,30)
 b.Position=UDim2.new(0,20,0,y)
 b.BackgroundColor3=Color3.fromRGB(35,35,35)
 b.TextColor3=Color3.new(1,1,1)
@@ -123,16 +123,15 @@ end)
 
 end
 
--- NORMAL Fly
+-- Fly
 local flyBV=nil
 
 RunService.Heartbeat:Connect(function()
 
 if Settings.Fly and LP.Character then
 
-local char=LP.Character
-local hrp=char:FindFirstChild("HumanoidRootPart")
-local hum=char:FindFirstChildOfClass("Humanoid")
+local hrp=LP.Character:FindFirstChild("HumanoidRootPart")
+local hum=LP.Character:FindFirstChildOfClass("Humanoid")
 
 if hrp and hum then
 
@@ -184,77 +183,50 @@ end
 
 end)
 
--- ESP
+-- ESP (no loop lag)
 Toggle("ESP",220,"ESP")
 
-task.spawn(function()
+local function AddESP(p)
 
-while true do
-task.wait(0.5)
+if p==LP then return end
 
-for _,p in pairs(Players:GetPlayers()) do
+p.CharacterAdded:Connect(function(char)
 
-if p~=LP and p.Character then
+local h=Instance.new("Highlight")
+h.Parent=char
 
-local char=p.Character
-local esp=char:FindFirstChild("Highlight")
+RunService.RenderStepped:Connect(function()
 
 if Settings.ESP then
 
-if not esp then
-esp=Instance.new("Highlight")
-esp.Parent=char
-end
-
 if p.Team==LP.Team then
-esp.FillColor=Color3.fromRGB(0,255,0)
+h.FillColor=Color3.fromRGB(0,255,0)
 else
-esp.FillColor=Color3.fromRGB(255,0,0)
+h.FillColor=Color3.fromRGB(255,0,0)
 end
+
+h.Enabled=true
 
 else
 
-if esp then
-esp:Destroy()
-end
-
-end
-
-end
-
-end
+h.Enabled=false
 
 end
 
 end)
 
--- WallCheck
-local function WallCheck(part)
-
-local origin=Camera.CFrame.Position
-local direction=(part.Position-origin)
-
-local params=RaycastParams.new()
-params.FilterType=Enum.RaycastFilterType.Blacklist
-params.FilterDescendantsInstances={LP.Character,part.Parent}
-
-local result=workspace:Raycast(origin,direction,params)
-
-if result then
-return false
-end
-
-return true
+end)
 
 end
 
--- Target
-local CurrentTarget=nil
+for _,p in pairs(Players:GetPlayers()) do
+AddESP(p)
+end
 
-task.spawn(function()
+Players.PlayerAdded:Connect(AddESP)
 
-while true do
-task.wait(0.2)
+-- Target Finder
+local function GetTarget()
 
 local closest=nil
 local dist=Settings.FOV
@@ -270,14 +242,10 @@ if not hum or hum.Health<=0 then continue end
 end
 
 local head=p.Character.Head
-
-if Settings.WallCheck and not WallCheck(head) then
-continue
-end
-
 local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
 if vis then
+
 local diff=(Vector2.new(pos.X,pos.Y)-circle.Position).Magnitude
 
 if diff<dist then
@@ -291,18 +259,19 @@ end
 
 end
 
-CurrentTarget=closest
+return closest
 
 end
-
-end)
 
 Toggle("Aimbot",260,"Aimbot")
 
 RunService.RenderStepped:Connect(function()
 
-if Settings.Aimbot and CurrentTarget then
-Camera.CFrame=CFrame.new(Camera.CFrame.Position,CurrentTarget.Position)
+if Settings.Aimbot then
+local target=GetTarget()
+if target then
+Camera.CFrame=CFrame.new(Camera.CFrame.Position,target.Position)
+end
 end
 
 end)
@@ -317,9 +286,13 @@ setreadonly(mt,false)
 mt.__index=newcclosure(function(self,key)
 
 if self==Mouse and key=="Hit" and Settings.SilentAim then
-if CurrentTarget then
-return CFrame.new(CurrentTarget.Position)
+
+local target=GetTarget()
+
+if target then
+return CFrame.new(target.Position)
 end
+
 end
 
 return old(self,key)
