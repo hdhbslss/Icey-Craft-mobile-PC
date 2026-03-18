@@ -1,5 +1,5 @@
-if getgenv().UniversalHubLite then return end
-getgenv().UniversalHubLite=true
+if getgenv().SimpleHub then return end
+getgenv().SimpleHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -7,40 +7,21 @@ local UIS=game:GetService("UserInputService")
 
 local LP=Players.LocalPlayer
 local Camera=workspace.CurrentCamera
-local Mouse=LP:GetMouse()
 
 local Settings={
 Aimbot=false,
-SilentAim=false,
 ESP=false,
 Fly=false,
 Noclip=false,
-WallCheck=true,
-KillCheck=true,
-FlySpeed=80,
-FOV=150
+FlySpeed=80
 }
-
--- FOV
-local circle=Drawing.new("Circle")
-circle.Color=Color3.fromRGB(0,170,255)
-circle.Thickness=2
-circle.NumSides=60
-circle.Filled=false
-circle.Visible=false
-
-RunService.RenderStepped:Connect(function()
-local size=Camera.ViewportSize
-circle.Position=Vector2.new(size.X/2,size.Y/2)
-circle.Radius=Settings.FOV
-end)
 
 -- UI
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,500)
-frame.Position=UDim2.new(.5,-120,.5,-250)
+frame.Size=UDim2.new(0,220,0,320)
+frame.Position=UDim2.new(.5,-110,.5,-160)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -49,12 +30,12 @@ Instance.new("UICorner",frame)
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,40)
 title.BackgroundTransparency=1
-title.Text="Universal Hub"
+title.Text="Simple Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
-title.TextSize=22
+title.TextSize=20
 
--- Mobile Toggle
+-- Hide Button (mobile)
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
@@ -67,7 +48,7 @@ mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Toggle
+-- Hide Key (PC)
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -76,25 +57,14 @@ end
 end)
 
 -- Button
-local function Button(text,y,func)
+local function Toggle(text,y,setting)
 
 local b=Instance.new("TextButton",frame)
-b.Size=UDim2.new(0,200,0,30)
+b.Size=UDim2.new(0,180,0,30)
 b.Position=UDim2.new(0,20,0,y)
 b.BackgroundColor3=Color3.fromRGB(35,35,35)
 b.TextColor3=Color3.new(1,1,1)
-b.Text=text
 Instance.new("UICorner",b)
-
-b.MouseButton1Click:Connect(func)
-
-return b
-end
-
--- Toggle
-local function Toggle(text,y,setting)
-
-local b=Button(text,y)
 
 local function update()
 
@@ -111,14 +81,8 @@ end
 update()
 
 b.MouseButton1Click:Connect(function()
-
 Settings[setting]=not Settings[setting]
 update()
-
-if setting=="Aimbot" then
-circle.Visible=Settings.Aimbot
-end
-
 end)
 
 end
@@ -158,19 +122,7 @@ end
 
 end)
 
-Toggle("Fly",60,"Fly")
-
-Button("Fly Speed +",100,function()
-Settings.FlySpeed+=20
-end)
-
-Button("Fly Speed -",140,function()
-Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
-end)
-
 -- Noclip
-Toggle("Noclip",180,"Noclip")
-
 RunService.Stepped:Connect(function()
 
 if Settings.Noclip and LP.Character then
@@ -183,9 +135,7 @@ end
 
 end)
 
--- ESP (no loop lag)
-Toggle("ESP",220,"ESP")
-
+-- ESP
 local function AddESP(p)
 
 if p==LP then return end
@@ -225,32 +175,26 @@ end
 
 Players.PlayerAdded:Connect(AddESP)
 
--- Target Finder
+-- Aimbot
 local function GetTarget()
 
 local closest=nil
-local dist=Settings.FOV
+local dist=200
 
 for _,p in pairs(Players:GetPlayers()) do
 
 if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
-local hum=p.Character:FindFirstChildOfClass("Humanoid")
-
-if Settings.KillCheck then
-if not hum or hum.Health<=0 then continue end
-end
-
-local head=p.Character.Head
-local pos,vis=Camera:WorldToViewportPoint(head.Position)
+local pos,vis=Camera:WorldToViewportPoint(p.Character.Head.Position)
 
 if vis then
 
-local diff=(Vector2.new(pos.X,pos.Y)-circle.Position).Magnitude
+local diff=(Vector2.new(pos.X,pos.Y)-
+Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
 
 if diff<dist then
 dist=diff
-closest=head
+closest=p.Character.Head
 end
 
 end
@@ -263,51 +207,22 @@ return closest
 
 end
 
-Toggle("Aimbot",260,"Aimbot")
-
 RunService.RenderStepped:Connect(function()
 
 if Settings.Aimbot then
+
 local target=GetTarget()
+
 if target then
 Camera.CFrame=CFrame.new(Camera.CFrame.Position,target.Position)
 end
-end
-
-end)
-
--- Silent Aim
-Toggle("Silent Aim",300,"SilentAim")
-
-local mt=getrawmetatable(game)
-local old=mt.__index
-setreadonly(mt,false)
-
-mt.__index=newcclosure(function(self,key)
-
-if self==Mouse and key=="Hit" and Settings.SilentAim then
-
-local target=GetTarget()
-
-if target then
-return CFrame.new(target.Position)
-end
 
 end
 
-return old(self,key)
-
 end)
 
-setreadonly(mt,true)
-
-Button("FOV +",340,function()
-Settings.FOV+=10
-end)
-
-Button("FOV -",380,function()
-Settings.FOV=math.max(50,Settings.FOV-10)
-end)
-
-Toggle("Wall Check",420,"WallCheck")
-Toggle("Kill Check",460,"KillCheck")
+-- Buttons
+Toggle("Fly",60,"Fly")
+Toggle("Noclip",100,"Noclip")
+Toggle("ESP",140,"ESP")
+Toggle("Aimbot",180,"Aimbot")
