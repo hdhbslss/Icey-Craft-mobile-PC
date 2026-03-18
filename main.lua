@@ -1,5 +1,5 @@
-if getgenv().UniversalHubFixed then return end
-getgenv().UniversalHubFixed=true
+if getgenv().UniversalHubFinal then return end
+getgenv().UniversalHubFinal=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -121,7 +121,7 @@ end)
 
 end
 
--- Fly
+-- Fly FIXED
 local flyBV=nil
 
 RunService.Heartbeat:Connect(function()
@@ -141,7 +141,10 @@ flyBV.Parent=hrp
 end
 
 local move=hum.MoveDirection
-local dir=(Camera.CFrame.RightVector*move.X)+(Camera.CFrame.LookVector*move.Z)
+
+local dir=
+(Camera.CFrame.RightVector*move.X)+
+(-Camera.CFrame.LookVector*move.Z)
 
 flyBV.Velocity=dir*Settings.FlySpeed
 
