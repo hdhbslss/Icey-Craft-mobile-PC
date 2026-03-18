@@ -1,5 +1,5 @@
-if getgenv().CleanUltimateHub then return end
-getgenv().CleanUltimateHub=true
+if getgenv().FinalCombatHub then return end
+getgenv().FinalCombatHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -32,71 +32,59 @@ FOV=150
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,380)
-frame.Position=UDim2.new(.5,-120,.5,-190)
-frame.BackgroundColor3=Color3.fromRGB(25,25,25)
+frame.Size=UDim2.new(0,240,0,360)
+frame.Position=UDim2.new(.5,-120,.5,-180)
+frame.BackgroundColor3=Color3.fromRGB(30,30,30)
 frame.Active=true
 frame.Draggable=true
-Instance.new("UICorner",frame)
 
-local title=Instance.new("TextLabel",frame)
-title.Size=UDim2.new(1,0,0,35)
-title.BackgroundTransparency=1
-title.Text="Ultimate Hub"
-title.TextColor3=Color3.fromRGB(0,170,255)
-title.Font=Enum.Font.GothamBold
-title.TextSize=18
-
-local container=Instance.new("Frame",frame)
-container.Size=UDim2.new(1,-20,1,-45)
-container.Position=UDim2.new(0,10,0,40)
-container.BackgroundTransparency=1
-
-local layout=Instance.new("UIListLayout",container)
+local layout=Instance.new("UIListLayout",frame)
 layout.Padding=UDim.new(0,6)
 
 -------------------------------------------------
--- BUTTON
+-- BUTTON SYSTEM
 -------------------------------------------------
 
-local function Toggle(text,setting)
+local function Toggle(name,setting)
 
-local b=Instance.new("TextButton",container)
-b.Size=UDim2.new(1,0,0,30)
+local b=Instance.new("TextButton",frame)
+b.Size=UDim2.new(1,-10,0,30)
 b.BackgroundColor3=Color3.fromRGB(40,40,40)
 b.TextColor3=Color3.new(1,1,1)
-b.Font=Enum.Font.Gotham
-b.TextSize=14
-Instance.new("UICorner",b)
+b.Font=Enum.Font.SourceSans
+b.TextSize=16
 
-local function update()
+local function refresh()
+
 if Settings[setting] then
-b.Text=text.." ✔"
+b.Text=name.." ✔"
 else
-b.Text=text
-end
+b.Text=name
 end
 
-update()
+end
+
+refresh()
 
 b.MouseButton1Click:Connect(function()
+
 Settings[setting]=not Settings[setting]
-update()
+refresh()
+
 end)
 
 end
 
-local function Button(text,func)
+local function Button(name,func)
 
-local b=Instance.new("TextButton",container)
-b.Size=UDim2.new(1,0,0,30)
+local b=Instance.new("TextButton",frame)
+b.Size=UDim2.new(1,-10,0,30)
 b.BackgroundColor3=Color3.fromRGB(40,40,40)
 b.TextColor3=Color3.new(1,1,1)
-b.Font=Enum.Font.Gotham
-b.TextSize=14
-Instance.new("UICorner",b)
+b.Font=Enum.Font.SourceSans
+b.TextSize=16
+b.Text=name
 
-b.Text=text
 b.MouseButton1Click:Connect(func)
 
 end
@@ -108,10 +96,8 @@ end
 local hide=Instance.new("TextButton",gui)
 hide.Size=UDim2.new(0,24,0,24)
 hide.Position=UDim2.new(0,6,0,6)
-hide.BackgroundTransparency=0.4
 hide.BackgroundColor3=Color3.fromRGB(30,30,30)
 hide.Text="-"
-Instance.new("UICorner",hide)
 
 hide.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
@@ -134,117 +120,21 @@ circle.Filled=false
 circle.Color=Color3.fromRGB(0,170,255)
 
 RunService.RenderStepped:Connect(function()
+
 circle.Position=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
 circle.Radius=Settings.FOV
-circle.Visible=Settings.Aimbot or Settings.SilentAim
-end)
-
--------------------------------------------------
--- FLY
--------------------------------------------------
-
-local flyBV=nil
-
-RunService.Heartbeat:Connect(function()
-
-if Settings.Fly and LP.Character then
-
-local hrp=LP.Character:FindFirstChild("HumanoidRootPart")
-local hum=LP.Character:FindFirstChildOfClass("Humanoid")
-
-if hrp and hum then
-
-if not flyBV then
-flyBV=Instance.new("BodyVelocity")
-flyBV.MaxForce=Vector3.new(1e9,1e9,1e9)
-flyBV.Parent=hrp
-end
-
-local move=hum.MoveDirection
-local cam=Camera.CFrame
-
-flyBV.Velocity=(cam.LookVector*move.Z + cam.RightVector*move.X)*Settings.FlySpeed
-
-end
-
-else
-
-if flyBV then
-flyBV:Destroy()
-flyBV=nil
-end
-
-end
+circle.Visible=Settings.Aimbot
 
 end)
 
 -------------------------------------------------
--- NOCLIP
--------------------------------------------------
-
-RunService.Stepped:Connect(function()
-
-if Settings.Noclip and LP.Character then
-for _,v in pairs(LP.Character:GetDescendants()) do
-if v:IsA("BasePart") then
-v.CanCollide=false
-end
-end
-end
-
-end)
-
--------------------------------------------------
--- ESP
--------------------------------------------------
-
-spawn(function()
-
-while task.wait(0.5) do
-
-for _,p in pairs(Players:GetPlayers()) do
-
-if p~=LP and p.Character then
-
-local h=p.Character:FindFirstChild("Highlight")
-
-if Settings.ESP then
-
-if not h then
-h=Instance.new("Highlight")
-h.Parent=p.Character
-end
-
-if p.Team==LP.Team then
-h.FillColor=Color3.fromRGB(0,255,0)
-else
-h.FillColor=Color3.fromRGB(255,0,0)
-end
-
-else
-
-if h then
-h:Destroy()
-end
-
-end
-
-end
-
-end
-
-end
-
-end)
-
--------------------------------------------------
--- TARGET
+-- TARGET SYSTEM
 -------------------------------------------------
 
 local function GetTarget()
 
 local closest=nil
-local dist=Settings.FOV
+local shortest=Settings.FOV
 
 for _,p in pairs(Players:GetPlayers()) do
 
@@ -252,21 +142,43 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
-if Settings.KillCheck and (not hum or hum.Health<=0) then
+-- Kill Check
+if Settings.KillCheck then
+if not hum or hum.Health<=0 then
 continue
+end
 end
 
 local head=p.Character.Head
 
-local pos,vis=Camera:WorldToViewportPoint(head.Position)
+-- Wall Check
+if Settings.WallCheck then
 
-if vis then
+local rayParams=RaycastParams.new()
+rayParams.FilterType=Enum.RaycastFilterType.Blacklist
+rayParams.FilterDescendantsInstances={LP.Character}
 
-local diff=(Vector2.new(pos.X,pos.Y)-
-Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
+local ray=workspace:Raycast(
+Camera.CFrame.Position,
+(head.Position-Camera.CFrame.Position).Unit*500,
+rayParams
+)
 
-if diff<dist then
-dist=diff
+if ray and ray.Instance and not head:IsDescendantOf(ray.Instance.Parent) then
+continue
+end
+
+end
+
+local pos,visible=Camera:WorldToViewportPoint(head.Position)
+
+if visible then
+
+local dist=(Vector2.new(pos.X,pos.Y)
+-Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
+
+if dist<shortest then
+shortest=dist
 closest=head
 end
 
@@ -323,6 +235,96 @@ return old(self,key)
 end)
 
 setreadonly(mt,true)
+
+-------------------------------------------------
+-- FLY
+-------------------------------------------------
+
+local BV=nil
+
+RunService.Heartbeat:Connect(function()
+
+if Settings.Fly and LP.Character then
+
+local hrp=LP.Character:FindFirstChild("HumanoidRootPart")
+local hum=LP.Character:FindFirstChildOfClass("Humanoid")
+
+if hrp and hum then
+
+if not BV then
+BV=Instance.new("BodyVelocity")
+BV.MaxForce=Vector3.new(1e9,1e9,1e9)
+BV.Parent=hrp
+end
+
+BV.Velocity=
+(Camera.CFrame.LookVector*hum.MoveDirection.Z+
+Camera.CFrame.RightVector*hum.MoveDirection.X)
+*Settings.FlySpeed
+
+end
+
+else
+
+if BV then
+BV:Destroy()
+BV=nil
+end
+
+end
+
+end)
+
+-------------------------------------------------
+-- NOCLIP
+-------------------------------------------------
+
+RunService.Stepped:Connect(function()
+
+if Settings.Noclip and LP.Character then
+
+for _,v in pairs(LP.Character:GetDescendants()) do
+if v:IsA("BasePart") then
+v.CanCollide=false
+end
+end
+
+end
+
+end)
+
+-------------------------------------------------
+-- ESP
+-------------------------------------------------
+
+local function AddESP(plr)
+
+if plr==LP then return end
+
+plr.CharacterAdded:Connect(function(char)
+
+if Settings.ESP then
+
+local h=Instance.new("Highlight")
+h.Parent=char
+
+if plr.Team==LP.Team then
+h.FillColor=Color3.fromRGB(0,255,0)
+else
+h.FillColor=Color3.fromRGB(255,0,0)
+end
+
+end
+
+end)
+
+end
+
+for _,p in pairs(Players:GetPlayers()) do
+AddESP(p)
+end
+
+Players.PlayerAdded:Connect(AddESP)
 
 -------------------------------------------------
 -- BUTTONS
