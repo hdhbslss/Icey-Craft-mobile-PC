@@ -1,5 +1,5 @@
-if getgenv().UniversalHubFinal then return end
-getgenv().UniversalHubFinal=true
+if getgenv().UniversalHubFixed then return end
+getgenv().UniversalHubFixed=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -21,7 +21,7 @@ FlySpeed=80,
 FOV=150
 }
 
--- FOV Circle
+-- FOV
 local circle=Drawing.new("Circle")
 circle.Color=Color3.fromRGB(0,170,255)
 circle.Thickness=2
@@ -54,7 +54,7 @@ title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=22
 
--- Mobile Toggle
+-- Mobile Hide
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
@@ -67,7 +67,7 @@ mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Toggle
+-- PC Hide
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -91,13 +91,12 @@ b.MouseButton1Click:Connect(func)
 return b
 end
 
--- Toggle (✔)
+-- Toggle
 local function Toggle(text,y,setting)
 
 local b=Button(text,y)
 
 local function update()
-
 if Settings[setting] then
 b.Text=text.." ✔"
 b.TextColor3=Color3.fromRGB(0,255,0)
@@ -105,7 +104,6 @@ else
 b.Text=text
 b.TextColor3=Color3.new(1,1,1)
 end
-
 end
 
 update()
@@ -123,7 +121,7 @@ end)
 
 end
 
--- Fly (PC + Mobile joystick)
+-- Fly
 local flyBV=nil
 
 RunService.Heartbeat:Connect(function()
@@ -132,7 +130,7 @@ if Settings.Fly and LP.Character then
 
 local char=LP.Character
 local hrp=char:FindFirstChild("HumanoidRootPart")
-local hum=char:FindFirstChild("Humanoid")
+local hum=char:FindFirstChildOfClass("Humanoid")
 
 if hrp and hum then
 
@@ -143,12 +141,9 @@ flyBV.Parent=hrp
 end
 
 local move=hum.MoveDirection
+local dir=(Camera.CFrame.RightVector*move.X)+(Camera.CFrame.LookVector*move.Z)
 
-local direction=
-(Camera.CFrame.RightVector*move.X)+
-(Camera.CFrame.LookVector*move.Z)
-
-flyBV.Velocity=direction*Settings.FlySpeed
+flyBV.Velocity=dir*Settings.FlySpeed
 
 end
 
@@ -196,14 +191,14 @@ task.spawn(function()
 while true do
 task.wait(0.5)
 
-if Settings.ESP then
-
 for _,p in pairs(Players:GetPlayers()) do
 
 if p~=LP and p.Character then
 
 local char=p.Character
 local esp=char:FindFirstChild("Highlight")
+
+if Settings.ESP then
 
 if not esp then
 esp=Instance.new("Highlight")
@@ -216,6 +211,12 @@ else
 esp.FillColor=Color3.fromRGB(255,0,0)
 end
 
+else
+
+if esp then
+esp:Destroy()
+end
+
 end
 
 end
@@ -226,7 +227,7 @@ end
 
 end)
 
--- Wall Check
+-- WallCheck
 local function WallCheck(part)
 
 local origin=Camera.CFrame.Position
@@ -246,7 +247,7 @@ return true
 
 end
 
--- Target Finder
+-- Target
 local CurrentTarget=nil
 
 task.spawn(function()
@@ -263,14 +264,12 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
--- Kill Check
 if Settings.KillCheck then
 if not hum or hum.Health<=0 then continue end
 end
 
 local head=p.Character.Head
 
--- Wall Check
 if Settings.WallCheck and not WallCheck(head) then
 continue
 end
@@ -278,7 +277,6 @@ end
 local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
 if vis then
-
 local diff=(Vector2.new(pos.X,pos.Y)-circle.Position).Magnitude
 
 if diff<dist then
