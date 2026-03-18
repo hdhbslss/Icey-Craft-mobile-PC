@@ -1,5 +1,5 @@
-if getgenv().UniversalHubFinal then return end
-getgenv().UniversalHubFinal=true
+if getgenv().UniversalHubStable then return end
+getgenv().UniversalHubStable=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -21,7 +21,7 @@ FlySpeed=80,
 FOV=150
 }
 
--- FOV
+-- FOV Circle
 local circle=Drawing.new("Circle")
 circle.Color=Color3.fromRGB(0,170,255)
 circle.Thickness=2
@@ -54,7 +54,7 @@ title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=22
 
--- Mobile Hide
+-- Mobile Hide Button
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
@@ -67,7 +67,7 @@ mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Hide
+-- PC Hide Key
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -97,6 +97,7 @@ local function Toggle(text,y,setting)
 local b=Button(text,y)
 
 local function update()
+
 if Settings[setting] then
 b.Text=text.." ✔"
 b.TextColor3=Color3.fromRGB(0,255,0)
@@ -104,6 +105,7 @@ else
 b.Text=text
 b.TextColor3=Color3.new(1,1,1)
 end
+
 end
 
 update()
@@ -121,7 +123,7 @@ end)
 
 end
 
--- Fly FIXED
+-- Stable Fly
 local flyBV=nil
 
 RunService.Heartbeat:Connect(function()
@@ -141,10 +143,12 @@ flyBV.Parent=hrp
 end
 
 local move=hum.MoveDirection
+local cam=Camera.CFrame
 
-local dir=
-(Camera.CFrame.RightVector*move.X)+
-(-Camera.CFrame.LookVector*move.Z)
+local forward=Vector3.new(cam.LookVector.X,0,cam.LookVector.Z).Unit
+local right=Vector3.new(cam.RightVector.X,0,cam.RightVector.Z).Unit
+
+local dir=(right*move.X)+(forward*move.Z)
 
 flyBV.Velocity=dir*Settings.FlySpeed
 
@@ -230,7 +234,7 @@ end
 
 end)
 
--- WallCheck
+-- Wall Check
 local function WallCheck(part)
 
 local origin=Camera.CFrame.Position
@@ -250,7 +254,7 @@ return true
 
 end
 
--- Target
+-- Target Finder
 local CurrentTarget=nil
 
 task.spawn(function()
