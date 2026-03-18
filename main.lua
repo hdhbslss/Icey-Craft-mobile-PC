@@ -1,5 +1,5 @@
-if getgenv().TabHub then return end
-getgenv().TabHub=true
+if getgenv().StableModernHub then return end
+getgenv().StableModernHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -7,6 +7,11 @@ local UIS=game:GetService("UserInputService")
 
 local LP=Players.LocalPlayer
 local Camera=workspace.CurrentCamera
+local Mouse=LP:GetMouse()
+
+-------------------------------------------------
+-- SETTINGS
+-------------------------------------------------
 
 local Settings={
 Fly=false,
@@ -21,15 +26,16 @@ FOV=150
 }
 
 -------------------------------------------------
--- UI BASE
+-- UI
 -------------------------------------------------
 
-local gui=Instance.new("ScreenGui",game.CoreGui)
+local gui=Instance.new("ScreenGui")
+gui.Parent=game.CoreGui
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,420,0,300)
-frame.Position=UDim2.new(.5,-210,.5,-150)
-frame.BackgroundColor3=Color3.fromRGB(18,18,18)
+frame.Size=UDim2.new(0,260,0,420)
+frame.Position=UDim2.new(.5,-130,.5,-210)
+frame.BackgroundColor3=Color3.fromRGB(20,20,20)
 frame.Active=true
 frame.Draggable=true
 Instance.new("UICorner",frame)
@@ -40,74 +46,50 @@ stroke.Color=Color3.fromRGB(0,170,255)
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,40)
 title.BackgroundTransparency=1
-title.Text="Script Hub"
+title.Text="Stable Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=20
 
 -------------------------------------------------
--- SIDEBAR
+-- MOBILE BUTTON
 -------------------------------------------------
 
-local sidebar=Instance.new("Frame",frame)
-sidebar.Size=UDim2.new(0,120,1,-40)
-sidebar.Position=UDim2.new(0,0,0,40)
-sidebar.BackgroundColor3=Color3.fromRGB(25,25,25)
+local mobile=Instance.new("TextButton",gui)
+mobile.Size=UDim2.new(0,40,0,40)
+mobile.Position=UDim2.new(.5,-20,0,10)
+mobile.Text="-"
+mobile.BackgroundColor3=Color3.fromRGB(35,35,35)
 
-local pages=Instance.new("Frame",frame)
-pages.Size=UDim2.new(1,-120,1,-40)
-pages.Position=UDim2.new(0,120,0,40)
-pages.BackgroundTransparency=1
-
--------------------------------------------------
--- PAGE SYSTEM
--------------------------------------------------
-
-local function CreatePage(name)
-
-local page=Instance.new("Frame",pages)
-page.Size=UDim2.new(1,0,1,0)
-page.Visible=false
-page.BackgroundTransparency=1
-
-local btn=Instance.new("TextButton",sidebar)
-btn.Size=UDim2.new(1,0,0,40)
-btn.Text=name
-btn.BackgroundColor3=Color3.fromRGB(35,35,35)
-btn.TextColor3=Color3.new(1,1,1)
-
-btn.MouseButton1Click:Connect(function()
-
-for _,p in pairs(pages:GetChildren()) do
-p.Visible=false
-end
-
-page.Visible=true
-
+mobile.MouseButton1Click:Connect(function()
+frame.Visible=not frame.Visible
 end)
 
-return page
+-------------------------------------------------
+-- PC HIDE
+-------------------------------------------------
+
+UIS.InputBegan:Connect(function(i,g)
+if g then return end
+if i.KeyCode==Enum.KeyCode.K then
+frame.Visible=not frame.Visible
 end
-
-local Combat=CreatePage("Combat")
-local Visual=CreatePage("Visual")
-local Move=CreatePage("Movement")
-local Misc=CreatePage("Misc")
-
-Combat.Visible=true
+end)
 
 -------------------------------------------------
 -- BUTTON SYSTEM
 -------------------------------------------------
 
-local function Toggle(parent,text,y,setting)
+local function Toggle(text,y,setting)
 
-local b=Instance.new("TextButton",parent)
-b.Size=UDim2.new(0,200,0,30)
-b.Position=UDim2.new(0,20,0,y)
-b.BackgroundColor3=Color3.fromRGB(40,40,40)
-b.TextColor3=Color3.new(1,1,1)
+local b=Instance.new("TextButton",frame)
+b.Size=UDim2.new(0,210,0,32)
+b.Position=UDim2.new(0,25,0,y)
+b.BackgroundColor3=Color3.fromRGB(35,35,35)
 b.Text=text
+b.TextColor3=Color3.new(1,1,1)
+
+Instance.new("UICorner",b)
 
 local function update()
 
@@ -130,43 +112,119 @@ end)
 
 end
 
--------------------------------------------------
--- COMBAT PAGE
--------------------------------------------------
+local function Button(text,y,func)
 
-Toggle(Combat,"Aimbot",20,"Aimbot")
-Toggle(Combat,"Silent Aim",60,"SilentAim")
-Toggle(Combat,"Wall Check",100,"WallCheck")
-Toggle(Combat,"Kill Check",140,"KillCheck")
+local b=Instance.new("TextButton",frame)
+b.Size=UDim2.new(0,210,0,32)
+b.Position=UDim2.new(0,25,0,y)
+b.BackgroundColor3=Color3.fromRGB(35,35,35)
+b.Text=text
+b.TextColor3=Color3.new(1,1,1)
 
--------------------------------------------------
--- VISUAL PAGE
--------------------------------------------------
+Instance.new("UICorner",b)
 
-Toggle(Visual,"ESP",20,"ESP")
+b.MouseButton1Click:Connect(func)
 
--------------------------------------------------
--- MOVE PAGE
--------------------------------------------------
-
-Toggle(Move,"Fly",20,"Fly")
-
--------------------------------------------------
--- MISC PAGE
--------------------------------------------------
-
-Toggle(Misc,"Noclip",20,"Noclip")
-
--------------------------------------------------
--- HIDE UI
--------------------------------------------------
-
-UIS.InputBegan:Connect(function(i,g)
-
-if g then return end
-
-if i.KeyCode==Enum.KeyCode.K then
-frame.Visible=not frame.Visible
 end
 
+-------------------------------------------------
+-- FLY
+-------------------------------------------------
+
+local control={F=0,B=0,L=0,R=0,U=0,D=0}
+local flyBV=nil
+
+UIS.InputBegan:Connect(function(i,g)
+if g then return end
+
+if i.KeyCode==Enum.KeyCode.W then control.F=1 end
+if i.KeyCode==Enum.KeyCode.S then control.B=-1 end
+if i.KeyCode==Enum.KeyCode.A then control.L=-1 end
+if i.KeyCode==Enum.KeyCode.D then control.R=1 end
+if i.KeyCode==Enum.KeyCode.Space then control.U=1 end
+if i.KeyCode==Enum.KeyCode.LeftShift then control.D=-1 end
+
+end)
+
+UIS.InputEnded:Connect(function(i)
+
+if i.KeyCode==Enum.KeyCode.W then control.F=0 end
+if i.KeyCode==Enum.KeyCode.S then control.B=0 end
+if i.KeyCode==Enum.KeyCode.A then control.L=0 end
+if i.KeyCode==Enum.KeyCode.D then control.R=0 end
+if i.KeyCode==Enum.KeyCode.Space then control.U=0 end
+if i.KeyCode==Enum.KeyCode.LeftShift then control.D=0 end
+
+end)
+
+RunService.Heartbeat:Connect(function()
+
+if Settings.Fly and LP.Character then
+
+local hrp=LP.Character:FindFirstChild("HumanoidRootPart")
+
+if hrp then
+
+if not flyBV then
+flyBV=Instance.new("BodyVelocity")
+flyBV.MaxForce=Vector3.new(1e9,1e9,1e9)
+flyBV.Parent=hrp
+end
+
+local cam=Camera.CFrame
+
+local move=
+(cam.LookVector*(control.F+control.B))+
+(cam.RightVector*(control.R+control.L))+
+(Vector3.new(0,1,0)*(control.U+control.D))
+
+flyBV.Velocity=move*Settings.FlySpeed
+
+end
+
+else
+
+if flyBV then
+flyBV:Destroy()
+flyBV=nil
+end
+
+end
+
+end)
+
+-------------------------------------------------
+-- NOCLIP
+-------------------------------------------------
+
+RunService.Stepped:Connect(function()
+
+if Settings.Noclip and LP.Character then
+for _,v in pairs(LP.Character:GetDescendants()) do
+if v:IsA("BasePart") then
+v.CanCollide=false
+end
+end
+end
+
+end)
+
+-------------------------------------------------
+-- BUTTONS
+-------------------------------------------------
+
+Toggle("Fly",60,"Fly")
+Toggle("Noclip",100,"Noclip")
+Toggle("ESP",140,"ESP")
+Toggle("Aimbot",180,"Aimbot")
+Toggle("Silent Aim",220,"SilentAim")
+Toggle("Wall Check",260,"WallCheck")
+Toggle("Kill Check",300,"KillCheck")
+
+Button("Fly Speed +",340,function()
+Settings.FlySpeed+=20
+end)
+
+Button("Fly Speed -",380,function()
+Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
 end)
