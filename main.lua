@@ -1,5 +1,5 @@
-if getgenv().StableHubESP then return end
-getgenv().StableHubESP=true
+if getgenv().TabHub then return end
+getgenv().TabHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -7,7 +7,6 @@ local UIS=game:GetService("UserInputService")
 
 local LP=Players.LocalPlayer
 local Camera=workspace.CurrentCamera
-local Mouse=LP:GetMouse()
 
 local Settings={
 Fly=false,
@@ -22,72 +21,99 @@ FOV=150
 }
 
 -------------------------------------------------
--- UI
+-- UI BASE
 -------------------------------------------------
 
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,230,0,440)
-frame.Position=UDim2.new(.5,-115,.5,-220)
-frame.BackgroundColor3=Color3.fromRGB(25,25,25)
+frame.Size=UDim2.new(0,420,0,300)
+frame.Position=UDim2.new(.5,-210,.5,-150)
+frame.BackgroundColor3=Color3.fromRGB(18,18,18)
 frame.Active=true
 frame.Draggable=true
 Instance.new("UICorner",frame)
 
+local stroke=Instance.new("UIStroke",frame)
+stroke.Color=Color3.fromRGB(0,170,255)
+
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,40)
 title.BackgroundTransparency=1
-title.Text="Stable Hub"
+title.Text="Script Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=20
 
--- mobile hide
-local mobile=Instance.new("TextButton",gui)
-mobile.Size=UDim2.new(0,40,0,40)
-mobile.Position=UDim2.new(.5,-20,0,10)
-mobile.Text="-"
+-------------------------------------------------
+-- SIDEBAR
+-------------------------------------------------
 
-mobile.MouseButton1Click:Connect(function()
-frame.Visible=not frame.Visible
-end)
+local sidebar=Instance.new("Frame",frame)
+sidebar.Size=UDim2.new(0,120,1,-40)
+sidebar.Position=UDim2.new(0,0,0,40)
+sidebar.BackgroundColor3=Color3.fromRGB(25,25,25)
 
--- pc hide
-UIS.InputBegan:Connect(function(i,g)
-if g then return end
-if i.KeyCode==Enum.KeyCode.K then
-frame.Visible=not frame.Visible
+local pages=Instance.new("Frame",frame)
+pages.Size=UDim2.new(1,-120,1,-40)
+pages.Position=UDim2.new(0,120,0,40)
+pages.BackgroundTransparency=1
+
+-------------------------------------------------
+-- PAGE SYSTEM
+-------------------------------------------------
+
+local function CreatePage(name)
+
+local page=Instance.new("Frame",pages)
+page.Size=UDim2.new(1,0,1,0)
+page.Visible=false
+page.BackgroundTransparency=1
+
+local btn=Instance.new("TextButton",sidebar)
+btn.Size=UDim2.new(1,0,0,40)
+btn.Text=name
+btn.BackgroundColor3=Color3.fromRGB(35,35,35)
+btn.TextColor3=Color3.new(1,1,1)
+
+btn.MouseButton1Click:Connect(function()
+
+for _,p in pairs(pages:GetChildren()) do
+p.Visible=false
 end
+
+page.Visible=true
+
 end)
+
+return page
+end
+
+local Combat=CreatePage("Combat")
+local Visual=CreatePage("Visual")
+local Move=CreatePage("Movement")
+local Misc=CreatePage("Misc")
+
+Combat.Visible=true
 
 -------------------------------------------------
 -- BUTTON SYSTEM
 -------------------------------------------------
 
-local function Button(text,y,func)
+local function Toggle(parent,text,y,setting)
 
-local b=Instance.new("TextButton",frame)
-b.Size=UDim2.new(0,190,0,30)
+local b=Instance.new("TextButton",parent)
+b.Size=UDim2.new(0,200,0,30)
 b.Position=UDim2.new(0,20,0,y)
-b.Text=text
-b.BackgroundColor3=Color3.fromRGB(35,35,35)
+b.BackgroundColor3=Color3.fromRGB(40,40,40)
 b.TextColor3=Color3.new(1,1,1)
-
-b.MouseButton1Click:Connect(func)
-
-return b
-end
-
-local function Toggle(text,y,setting)
-
-local b=Button(text,y)
+b.Text=text
 
 local function update()
 
 if Settings[setting] then
 b.Text=text.." ✔"
-b.TextColor3=Color3.fromRGB(0,255,0)
+b.TextColor3=Color3.fromRGB(0,255,120)
 else
 b.Text=text
 b.TextColor3=Color3.new(1,1,1)
@@ -105,226 +131,42 @@ end)
 end
 
 -------------------------------------------------
--- ESP SYSTEM
+-- COMBAT PAGE
 -------------------------------------------------
 
-local ESPFolder=Instance.new("Folder")
-ESPFolder.Name="ESP"
-ESPFolder.Parent=game.CoreGui
-
-local function CreateESP(player)
-
-if player==LP then return end
-
-local function add(char)
-
-local old=ESPFolder:FindFirstChild(player.Name)
-if old then old:Destroy() end
-
-local h=Instance.new("Highlight")
-h.Name=player.Name
-h.Parent=ESPFolder
-h.Adornee=char
-
-end
-
-if player.Character then
-add(player.Character)
-end
-
-player.CharacterAdded:Connect(add)
-
-end
-
-for _,p in pairs(Players:GetPlayers()) do
-CreateESP(p)
-end
-
-Players.PlayerAdded:Connect(CreateESP)
-
--- ESP update
-RunService.RenderStepped:Connect(function()
-
-for _,h in pairs(ESPFolder:GetChildren()) do
-
-local player=Players:FindFirstChild(h.Name)
-
-if player and player.Character then
-
-if Settings.ESP then
-
-if player.Team==LP.Team then
-h.FillColor=Color3.fromRGB(0,255,0)
-else
-h.FillColor=Color3.fromRGB(255,0,0)
-end
-
-h.Enabled=true
-
-else
-h.Enabled=false
-end
-
-end
-
-end
-
-end)
+Toggle(Combat,"Aimbot",20,"Aimbot")
+Toggle(Combat,"Silent Aim",60,"SilentAim")
+Toggle(Combat,"Wall Check",100,"WallCheck")
+Toggle(Combat,"Kill Check",140,"KillCheck")
 
 -------------------------------------------------
--- WALL CHECK
+-- VISUAL PAGE
 -------------------------------------------------
 
-local function WallCheck(part)
-
-local origin=Camera.CFrame.Position
-local dir=(part.Position-origin)
-
-local params=RaycastParams.new()
-params.FilterType=Enum.RaycastFilterType.Blacklist
-params.FilterDescendantsInstances={LP.Character}
-
-local ray=workspace:Raycast(origin,dir,params)
-
-if ray then
-return ray.Instance:IsDescendantOf(part.Parent)
-end
-
-return true
-
-end
+Toggle(Visual,"ESP",20,"ESP")
 
 -------------------------------------------------
--- TARGET
+-- MOVE PAGE
 -------------------------------------------------
 
-local function GetTarget()
-
-local closest=nil
-local dist=Settings.FOV
-
-for _,p in pairs(Players:GetPlayers()) do
-
-if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
-
-local hum=p.Character:FindFirstChildOfClass("Humanoid")
-
-if Settings.KillCheck and (not hum or hum.Health<=0) then
-continue
-end
-
-local head=p.Character.Head
-
-if Settings.WallCheck and not WallCheck(head) then
-continue
-end
-
-local pos,vis=Camera:WorldToViewportPoint(head.Position)
-
-if vis then
-
-local diff=(Vector2.new(pos.X,pos.Y)-
-Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
-
-if diff<dist then
-dist=diff
-closest=head
-end
-
-end
-
-end
-
-end
-
-return closest
-
-end
+Toggle(Move,"Fly",20,"Fly")
 
 -------------------------------------------------
--- AIMBOT
+-- MISC PAGE
 -------------------------------------------------
 
-RunService.RenderStepped:Connect(function()
-
-if Settings.Aimbot then
-
-local target=GetTarget()
-
-if target then
-Camera.CFrame=CFrame.new(Camera.CFrame.Position,target.Position)
-end
-
-end
-
-end)
+Toggle(Misc,"Noclip",20,"Noclip")
 
 -------------------------------------------------
--- SILENT AIM
+-- HIDE UI
 -------------------------------------------------
 
-local mt=getrawmetatable(game)
-local old=mt.__index
-setreadonly(mt,false)
+UIS.InputBegan:Connect(function(i,g)
 
-mt.__index=newcclosure(function(self,key)
+if g then return end
 
-if self==Mouse and key=="Hit" and Settings.SilentAim then
-
-local t=GetTarget()
-
-if t then
-return CFrame.new(t.Position)
+if i.KeyCode==Enum.KeyCode.K then
+frame.Visible=not frame.Visible
 end
 
-end
-
-return old(self,key)
-
-end)
-
-setreadonly(mt,true)
-
--------------------------------------------------
--- NOCLIP
--------------------------------------------------
-
-RunService.Stepped:Connect(function()
-
-if Settings.Noclip and LP.Character then
-for _,v in pairs(LP.Character:GetDescendants()) do
-if v:IsA("BasePart") then
-v.CanCollide=false
-end
-end
-end
-
-end)
-
--------------------------------------------------
--- BUTTONS
--------------------------------------------------
-
-Toggle("Fly",60,"Fly")
-Toggle("Noclip",100,"Noclip")
-Toggle("ESP",140,"ESP")
-Toggle("Aimbot",180,"Aimbot")
-Toggle("Silent Aim",220,"SilentAim")
-Toggle("Wall Check",260,"WallCheck")
-Toggle("Kill Check",300,"KillCheck")
-
-Button("Fly Speed +",340,function()
-Settings.FlySpeed+=20
-end)
-
-Button("Fly Speed -",380,function()
-Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
-end)
-
-Button("FOV +",420,function()
-Settings.FOV+=10
-end)
-
-Button("FOV -",460,function()
-Settings.FOV=math.max(50,Settings.FOV-10)
 end)
