@@ -1,5 +1,5 @@
-if getgenv().ScriptHubUltra then return end
-getgenv().ScriptHubUltra=true
+if getgenv().StableHubV2 then return end
+getgenv().StableHubV2=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -21,13 +21,12 @@ FlySpeed=80,
 FOV=150
 }
 
--- FOV Circle
+-- FOV
 local circle=Drawing.new("Circle")
 circle.Color=Color3.fromRGB(0,170,255)
 circle.Thickness=2
 circle.NumSides=60
 circle.Filled=false
-circle.Visible=false
 
 RunService.RenderStepped:Connect(function()
 
@@ -42,8 +41,8 @@ end)
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,480)
-frame.Position=UDim2.new(.5,-120,.5,-240)
+frame.Size=UDim2.new(0,240,0,460)
+frame.Position=UDim2.new(.5,-120,.5,-230)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -52,25 +51,22 @@ Instance.new("UICorner",frame)
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,40)
 title.BackgroundTransparency=1
-title.Text="Script Hub Ultra"
+title.Text="Stable Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=20
 
--- Mobile Hide
+-- mobile hide
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
 mobile.Text="-"
-mobile.BackgroundColor3=Color3.fromRGB(40,40,40)
-mobile.TextColor3=Color3.new(1,1,1)
-Instance.new("UICorner",mobile)
 
 mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Hide
+-- pc hide
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -78,23 +74,22 @@ frame.Visible=not frame.Visible
 end
 end)
 
--- Button
+-- button
 local function Button(text,y,func)
 
 local b=Instance.new("TextButton",frame)
 b.Size=UDim2.new(0,200,0,30)
 b.Position=UDim2.new(0,20,0,y)
+b.Text=text
 b.BackgroundColor3=Color3.fromRGB(35,35,35)
 b.TextColor3=Color3.new(1,1,1)
-b.Text=text
-Instance.new("UICorner",b)
 
 b.MouseButton1Click:Connect(func)
 
 return b
 end
 
--- Toggle
+-- toggle
 local function Toggle(text,y,setting)
 
 local b=Button(text,y)
@@ -120,87 +115,61 @@ end)
 
 end
 
--- Fly Controls
-local control={F=0,B=0,L=0,R=0,U=0,D=0}
-local flyBV=nil
+-- ESP
+local function AddESP(p)
 
-UIS.InputBegan:Connect(function(i,g)
-if g then return end
+if p==LP then return end
 
-if i.KeyCode==Enum.KeyCode.W then control.F=1 end
-if i.KeyCode==Enum.KeyCode.S then control.B=-1 end
-if i.KeyCode==Enum.KeyCode.A then control.L=-1 end
-if i.KeyCode==Enum.KeyCode.D then control.R=1 end
-if i.KeyCode==Enum.KeyCode.Space then control.U=1 end
-if i.KeyCode==Enum.KeyCode.LeftShift then control.D=-1 end
+p.CharacterAdded:Connect(function(char)
 
-end)
+local h=Instance.new("Highlight")
+h.Parent=char
 
-UIS.InputEnded:Connect(function(i)
+RunService.RenderStepped:Connect(function()
 
-if i.KeyCode==Enum.KeyCode.W then control.F=0 end
-if i.KeyCode==Enum.KeyCode.S then control.B=0 end
-if i.KeyCode==Enum.KeyCode.A then control.L=0 end
-if i.KeyCode==Enum.KeyCode.D then control.R=0 end
-if i.KeyCode==Enum.KeyCode.Space then control.U=0 end
-if i.KeyCode==Enum.KeyCode.LeftShift then control.D=0 end
+if Settings.ESP then
 
-end)
-
-RunService.Heartbeat:Connect(function()
-
-if Settings.Fly and LP.Character then
-
-local hrp=LP.Character:FindFirstChild("HumanoidRootPart")
-local hum=LP.Character:FindFirstChildOfClass("Humanoid")
-
-if hrp and hum then
-
-if not flyBV then
-flyBV=Instance.new("BodyVelocity")
-flyBV.MaxForce=Vector3.new(1e9,1e9,1e9)
-flyBV.Parent=hrp
+if p.Team==LP.Team then
+h.FillColor=Color3.fromRGB(0,255,0)
+else
+h.FillColor=Color3.fromRGB(255,0,0)
 end
 
-local cam=Camera.CFrame
-
-local move=
-(cam.LookVector*(control.F+control.B))+
-(cam.RightVector*(control.R+control.L))+
-(Vector3.new(0,1,0)*(control.U+control.D))
-
-local joy=hum.MoveDirection
-move=move+Vector3.new(joy.X,0,joy.Z)
-
-flyBV.Velocity=move*Settings.FlySpeed
-
-end
+h.Enabled=true
 
 else
-
-if flyBV then
-flyBV:Destroy()
-flyBV=nil
-end
-
+h.Enabled=false
 end
 
 end)
 
--- Noclip
-RunService.Stepped:Connect(function()
-
-if Settings.Noclip and LP.Character then
-for _,v in pairs(LP.Character:GetDescendants()) do
-if v:IsA("BasePart") then
-v.CanCollide=false
-end
-end
-end
-
 end)
 
--- Target Finder
+end
+
+for _,p in pairs(Players:GetPlayers()) do
+AddESP(p)
+end
+
+Players.PlayerAdded:Connect(AddESP)
+
+-- WallCheck
+local function WallCheck(part)
+
+local origin=Camera.CFrame.Position
+local direction=(part.Position-origin)
+
+local params=RaycastParams.new()
+params.FilterType=Enum.RaycastFilterType.Blacklist
+params.FilterDescendantsInstances={LP.Character,part.Parent}
+
+local result=workspace:Raycast(origin,direction,params)
+
+return not result
+
+end
+
+-- Target
 local function GetTarget()
 
 local closest=nil
@@ -212,11 +181,19 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
-if Settings.KillCheck and (not hum or hum.Health<=0) then
+-- KillCheck
+if Settings.KillCheck then
+if not hum or hum.Health<=0 then
 continue
+end
 end
 
 local head=p.Character.Head
+
+-- WallCheck
+if Settings.WallCheck and not WallCheck(head) then
+continue
+end
 
 local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
@@ -254,25 +231,50 @@ end
 
 end)
 
--- Buttons
+-- Silent Aim
+local mt=getrawmetatable(game)
+local old=mt.__index
+setreadonly(mt,false)
+
+mt.__index=newcclosure(function(self,key)
+
+if self==Mouse and key=="Hit" and Settings.SilentAim then
+
+local target=GetTarget()
+
+if target then
+return CFrame.new(target.Position)
+end
+
+end
+
+return old(self,key)
+
+end)
+
+setreadonly(mt,true)
+
+-- buttons
 Toggle("Fly",60,"Fly")
 Toggle("Noclip",100,"Noclip")
 Toggle("ESP",140,"ESP")
 Toggle("Aimbot",180,"Aimbot")
 Toggle("Silent Aim",220,"SilentAim")
+Toggle("Wall Check",260,"WallCheck")
+Toggle("Kill Check",300,"KillCheck")
 
-Button("Fly Speed +",260,function()
+Button("Fly Speed +",340,function()
 Settings.FlySpeed+=20
 end)
 
-Button("Fly Speed -",300,function()
+Button("Fly Speed -",380,function()
 Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
 end)
 
-Button("FOV +",340,function()
+Button("FOV +",420,function()
 Settings.FOV+=10
 end)
 
-Button("FOV -",380,function()
+Button("FOV -",460,function()
 Settings.FOV=math.max(50,Settings.FOV-10)
 end)
