@@ -1,5 +1,5 @@
-if getgenv().CrossPlatformHub then return end
-getgenv().CrossPlatformHub=true
+if getgenv().ScriptHubUltra then return end
+getgenv().ScriptHubUltra=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -21,12 +21,29 @@ FlySpeed=80,
 FOV=150
 }
 
+-- FOV Circle
+local circle=Drawing.new("Circle")
+circle.Color=Color3.fromRGB(0,170,255)
+circle.Thickness=2
+circle.NumSides=60
+circle.Filled=false
+circle.Visible=false
+
+RunService.RenderStepped:Connect(function()
+
+local size=Camera.ViewportSize
+circle.Position=Vector2.new(size.X/2,size.Y/2)
+circle.Radius=Settings.FOV
+circle.Visible=Settings.Aimbot
+
+end)
+
 -- UI
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,440)
-frame.Position=UDim2.new(.5,-120,.5,-220)
+frame.Size=UDim2.new(0,240,0,480)
+frame.Position=UDim2.new(.5,-120,.5,-240)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -35,7 +52,7 @@ Instance.new("UICorner",frame)
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,40)
 title.BackgroundTransparency=1
-title.Text="Cross Hub"
+title.Text="Script Hub Ultra"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=20
@@ -103,8 +120,32 @@ end)
 
 end
 
--- Fly (PC + Mobile)
+-- Fly Controls
+local control={F=0,B=0,L=0,R=0,U=0,D=0}
 local flyBV=nil
+
+UIS.InputBegan:Connect(function(i,g)
+if g then return end
+
+if i.KeyCode==Enum.KeyCode.W then control.F=1 end
+if i.KeyCode==Enum.KeyCode.S then control.B=-1 end
+if i.KeyCode==Enum.KeyCode.A then control.L=-1 end
+if i.KeyCode==Enum.KeyCode.D then control.R=1 end
+if i.KeyCode==Enum.KeyCode.Space then control.U=1 end
+if i.KeyCode==Enum.KeyCode.LeftShift then control.D=-1 end
+
+end)
+
+UIS.InputEnded:Connect(function(i)
+
+if i.KeyCode==Enum.KeyCode.W then control.F=0 end
+if i.KeyCode==Enum.KeyCode.S then control.B=0 end
+if i.KeyCode==Enum.KeyCode.A then control.L=0 end
+if i.KeyCode==Enum.KeyCode.D then control.R=0 end
+if i.KeyCode==Enum.KeyCode.Space then control.U=0 end
+if i.KeyCode==Enum.KeyCode.LeftShift then control.D=0 end
+
+end)
 
 RunService.Heartbeat:Connect(function()
 
@@ -121,8 +162,17 @@ flyBV.MaxForce=Vector3.new(1e9,1e9,1e9)
 flyBV.Parent=hrp
 end
 
-local move=hum.MoveDirection
-flyBV.Velocity=Vector3.new(move.X,0,move.Z)*Settings.FlySpeed
+local cam=Camera.CFrame
+
+local move=
+(cam.LookVector*(control.F+control.B))+
+(cam.RightVector*(control.R+control.L))+
+(Vector3.new(0,1,0)*(control.U+control.D))
+
+local joy=hum.MoveDirection
+move=move+Vector3.new(joy.X,0,joy.Z)
+
+flyBV.Velocity=move*Settings.FlySpeed
 
 end
 
@@ -150,27 +200,7 @@ end
 
 end)
 
--- WallCheck
-local function WallCheck(part)
-
-local origin=Camera.CFrame.Position
-local direction=(part.Position-origin)
-
-local params=RaycastParams.new()
-params.FilterType=Enum.RaycastFilterType.Blacklist
-params.FilterDescendantsInstances={LP.Character,part.Parent}
-
-local result=workspace:Raycast(origin,direction,params)
-
-if result then
-return false
-end
-
-return true
-
-end
-
--- Target
+-- Target Finder
 local function GetTarget()
 
 local closest=nil
@@ -182,22 +212,17 @@ if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
 local hum=p.Character:FindFirstChildOfClass("Humanoid")
 
-if Settings.KillCheck then
-if not hum or hum.Health<=0 then continue end
+if Settings.KillCheck and (not hum or hum.Health<=0) then
+continue
 end
 
 local head=p.Character.Head
-
-if Settings.WallCheck and not WallCheck(head) then
-continue
-end
 
 local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
 if vis then
 
-local diff=(Vector2.new(pos.X,pos.Y)-
-Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
+local diff=(Vector2.new(pos.X,pos.Y)-circle.Position).Magnitude
 
 if diff<dist then
 dist=diff
@@ -229,50 +254,25 @@ end
 
 end)
 
--- Silent Aim
-local mt=getrawmetatable(game)
-local old=mt.__index
-setreadonly(mt,false)
-
-mt.__index=newcclosure(function(self,key)
-
-if self==Mouse and key=="Hit" and Settings.SilentAim then
-
-local target=GetTarget()
-
-if target then
-return CFrame.new(target.Position)
-end
-
-end
-
-return old(self,key)
-
-end)
-
-setreadonly(mt,true)
-
 -- Buttons
 Toggle("Fly",60,"Fly")
 Toggle("Noclip",100,"Noclip")
 Toggle("ESP",140,"ESP")
 Toggle("Aimbot",180,"Aimbot")
 Toggle("Silent Aim",220,"SilentAim")
-Toggle("Wall Check",260,"WallCheck")
-Toggle("Kill Check",300,"KillCheck")
 
-Button("Fly Speed +",340,function()
+Button("Fly Speed +",260,function()
 Settings.FlySpeed+=20
 end)
 
-Button("Fly Speed -",380,function()
+Button("Fly Speed -",300,function()
 Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
 end)
 
-Button("FOV +",420,function()
+Button("FOV +",340,function()
 Settings.FOV+=10
 end)
 
-Button("FOV -",460,function()
+Button("FOV -",380,function()
 Settings.FOV=math.max(50,Settings.FOV-10)
 end)
