@@ -1,5 +1,5 @@
-if getgenv().FinalStableHub then return end
-getgenv().FinalStableHub=true
+if getgenv().CleanUltimateHub then return end
+getgenv().CleanUltimateHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -19,6 +19,8 @@ Noclip=false,
 ESP=false,
 Aimbot=false,
 SilentAim=false,
+WallCheck=true,
+KillCheck=true,
 FlySpeed=80,
 FOV=150
 }
@@ -30,8 +32,8 @@ FOV=150
 local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,240,0,360)
-frame.Position=UDim2.new(.5,-120,.5,-180)
+frame.Size=UDim2.new(0,240,0,380)
+frame.Position=UDim2.new(.5,-120,.5,-190)
 frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
@@ -40,7 +42,7 @@ Instance.new("UICorner",frame)
 local title=Instance.new("TextLabel",frame)
 title.Size=UDim2.new(1,0,0,35)
 title.BackgroundTransparency=1
-title.Text="Final Hub"
+title.Text="Ultimate Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=18
@@ -68,7 +70,11 @@ b.TextSize=14
 Instance.new("UICorner",b)
 
 local function update()
-b.Text = Settings[setting] and text.." ✔" or text
+if Settings[setting] then
+b.Text=text.." ✔"
+else
+b.Text=text
+end
 end
 
 update()
@@ -90,12 +96,13 @@ b.Font=Enum.Font.Gotham
 b.TextSize=14
 Instance.new("UICorner",b)
 
+b.Text=text
 b.MouseButton1Click:Connect(func)
 
 end
 
 -------------------------------------------------
--- HIDE
+-- HIDE UI
 -------------------------------------------------
 
 local hide=Instance.new("TextButton",gui)
@@ -122,20 +129,14 @@ end)
 -------------------------------------------------
 
 local circle=Drawing.new("Circle")
-circle.Color=Color3.fromRGB(0,170,255)
 circle.Thickness=2
 circle.Filled=false
+circle.Color=Color3.fromRGB(0,170,255)
 
 RunService.RenderStepped:Connect(function()
-
-circle.Position=Vector2.new(
-Camera.ViewportSize.X/2,
-Camera.ViewportSize.Y/2
-)
-
+circle.Position=Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
 circle.Radius=Settings.FOV
 circle.Visible=Settings.Aimbot or Settings.SilentAim
-
 end)
 
 -------------------------------------------------
@@ -162,10 +163,7 @@ end
 local move=hum.MoveDirection
 local cam=Camera.CFrame
 
-flyBV.Velocity=
-(cam.LookVector*move.Z +
-cam.RightVector*move.X)
-*Settings.FlySpeed
+flyBV.Velocity=(cam.LookVector*move.Z + cam.RightVector*move.X)*Settings.FlySpeed
 
 end
 
@@ -187,13 +185,11 @@ end)
 RunService.Stepped:Connect(function()
 
 if Settings.Noclip and LP.Character then
-
 for _,v in pairs(LP.Character:GetDescendants()) do
 if v:IsA("BasePart") then
 v.CanCollide=false
 end
 end
-
 end
 
 end)
@@ -204,7 +200,7 @@ end)
 
 spawn(function()
 
-while task.wait(0.4) do
+while task.wait(0.5) do
 
 for _,p in pairs(Players:GetPlayers()) do
 
@@ -254,7 +250,15 @@ for _,p in pairs(Players:GetPlayers()) do
 
 if p~=LP and p.Character and p.Character:FindFirstChild("Head") then
 
-local pos,vis=Camera:WorldToViewportPoint(p.Character.Head.Position)
+local hum=p.Character:FindFirstChildOfClass("Humanoid")
+
+if Settings.KillCheck and (not hum or hum.Health<=0) then
+continue
+end
+
+local head=p.Character.Head
+
+local pos,vis=Camera:WorldToViewportPoint(head.Position)
 
 if vis then
 
@@ -263,7 +267,7 @@ Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)).Magnitude
 
 if diff<dist then
 dist=diff
-closest=p.Character.Head
+closest=head
 end
 
 end
@@ -329,13 +333,15 @@ Toggle("Noclip","Noclip")
 Toggle("ESP","ESP")
 Toggle("Aimbot","Aimbot")
 Toggle("Silent Aim","SilentAim")
+Toggle("Wall Check","WallCheck")
+Toggle("Kill Check","KillCheck")
 
 Button("Fly Speed +",function()
 Settings.FlySpeed+=20
 end)
 
 Button("Fly Speed -",function()
-Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
+Settings.FlySpeed-=20
 end)
 
 Button("FOV +",function()
@@ -343,5 +349,5 @@ Settings.FOV+=20
 end)
 
 Button("FOV -",function()
-Settings.FOV=math.max(50,Settings.FOV-20)
+Settings.FOV-=20
 end)
