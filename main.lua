@@ -54,7 +54,7 @@ title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
 title.TextSize=22
 
--- Mobile Hide Button
+-- Mobile Hide
 local mobile=Instance.new("TextButton",gui)
 mobile.Size=UDim2.new(0,40,0,40)
 mobile.Position=UDim2.new(.5,-20,0,10)
@@ -67,7 +67,7 @@ mobile.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--- PC Hide Key
+-- PC Hide
 UIS.InputBegan:Connect(function(i,g)
 if g then return end
 if i.KeyCode==Enum.KeyCode.K then
@@ -123,7 +123,7 @@ end)
 
 end
 
--- Stable Fly
+-- NORMAL Fly
 local flyBV=nil
 
 RunService.Heartbeat:Connect(function()
@@ -143,14 +143,8 @@ flyBV.Parent=hrp
 end
 
 local move=hum.MoveDirection
-local cam=Camera.CFrame
 
-local forward=Vector3.new(cam.LookVector.X,0,cam.LookVector.Z).Unit
-local right=Vector3.new(cam.RightVector.X,0,cam.RightVector.Z).Unit
-
-local dir=(right*move.X)+(forward*move.Z)
-
-flyBV.Velocity=dir*Settings.FlySpeed
+flyBV.Velocity=Vector3.new(move.X,0,move.Z)*Settings.FlySpeed
 
 end
 
@@ -234,7 +228,7 @@ end
 
 end)
 
--- Wall Check
+-- WallCheck
 local function WallCheck(part)
 
 local origin=Camera.CFrame.Position
@@ -254,7 +248,7 @@ return true
 
 end
 
--- Target Finder
+-- Target
 local CurrentTarget=nil
 
 task.spawn(function()
