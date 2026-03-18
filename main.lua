@@ -1,5 +1,5 @@
-if getgenv().ModernStableHub then return end
-getgenv().ModernStableHub=true
+if getgenv().UltraStableHub then return end
+getgenv().UltraStableHub=true
 
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
@@ -26,70 +26,51 @@ FOV=150
 }
 
 -------------------------------------------------
--- UI SYSTEM
+-- UI
 -------------------------------------------------
 
-local gui=Instance.new("ScreenGui")
-gui.Name="ModernHub"
-gui.Parent=game.CoreGui
+local gui=Instance.new("ScreenGui",game.CoreGui)
 
 local frame=Instance.new("Frame",gui)
-frame.Size=UDim2.new(0,260,0,420)
-frame.Position=UDim2.new(.5,-130,.5,-210)
-frame.BackgroundColor3=Color3.fromRGB(20,20,20)
+frame.Size=UDim2.new(0,240,0,340)
+frame.Position=UDim2.new(.5,-120,.5,-170)
+frame.BackgroundColor3=Color3.fromRGB(25,25,25)
 frame.Active=true
 frame.Draggable=true
 Instance.new("UICorner",frame)
 
-local stroke=Instance.new("UIStroke",frame)
-stroke.Color=Color3.fromRGB(0,170,255)
-
 local title=Instance.new("TextLabel",frame)
-title.Size=UDim2.new(1,0,0,40)
+title.Size=UDim2.new(1,0,0,35)
 title.BackgroundTransparency=1
-title.Text="Modern Script Hub"
+title.Text="Ultra Stable Hub"
 title.TextColor3=Color3.fromRGB(0,170,255)
 title.Font=Enum.Font.GothamBold
-title.TextSize=20
-
--------------------------------------------------
--- BUTTON CONTAINER
--------------------------------------------------
+title.TextSize=18
 
 local container=Instance.new("Frame",frame)
-container.Size=UDim2.new(1,-20,1,-50)
-container.Position=UDim2.new(0,10,0,45)
+container.Size=UDim2.new(1,-20,1,-45)
+container.Position=UDim2.new(0,10,0,40)
 container.BackgroundTransparency=1
 
 local layout=Instance.new("UIListLayout",container)
-layout.Padding=UDim.new(0,8)
+layout.Padding=UDim.new(0,6)
 
 -------------------------------------------------
--- TOGGLE BUTTON
+-- BUTTON
 -------------------------------------------------
 
 local function Toggle(text,setting)
 
 local b=Instance.new("TextButton",container)
-b.Size=UDim2.new(1,0,0,32)
-b.BackgroundColor3=Color3.fromRGB(35,35,35)
+b.Size=UDim2.new(1,0,0,30)
+b.BackgroundColor3=Color3.fromRGB(40,40,40)
 b.TextColor3=Color3.new(1,1,1)
 b.Font=Enum.Font.Gotham
 b.TextSize=14
-b.Text=text
-
 Instance.new("UICorner",b)
 
 local function update()
-
-if Settings[setting] then
-b.Text=text.." ✔"
-b.TextColor3=Color3.fromRGB(0,255,120)
-else
-b.Text=text
-b.TextColor3=Color3.new(1,1,1)
-end
-
+b.Text = Settings[setting] and text.." ✔" or text
 end
 
 update()
@@ -101,87 +82,35 @@ end)
 
 end
 
-local function Button(text,func)
-
-local b=Instance.new("TextButton",container)
-b.Size=UDim2.new(1,0,0,32)
-b.BackgroundColor3=Color3.fromRGB(35,35,35)
-b.TextColor3=Color3.new(1,1,1)
-b.Font=Enum.Font.Gotham
-b.TextSize=14
-b.Text=text
-
-Instance.new("UICorner",b)
-
-b.MouseButton1Click:Connect(func)
-
-end
-
 -------------------------------------------------
--- MOBILE HIDE BUTTON
+-- HIDE BUTTON
 -------------------------------------------------
 
 local hide=Instance.new("TextButton",gui)
-hide.Size=UDim2.new(0,26,0,26)
-hide.Position=UDim2.new(0,8,0,8)
-
+hide.Size=UDim2.new(0,24,0,24)
+hide.Position=UDim2.new(0,6,0,6)
+hide.BackgroundTransparency=0.4
 hide.BackgroundColor3=Color3.fromRGB(30,30,30)
-hide.BackgroundTransparency=0.35
-
 hide.Text="-"
-hide.TextColor3=Color3.fromRGB(200,200,200)
-hide.Font=Enum.Font.GothamBold
-hide.TextSize=18
-
+hide.TextColor3=Color3.new(1,1,1)
 Instance.new("UICorner",hide)
 
 hide.MouseButton1Click:Connect(function()
 frame.Visible=not frame.Visible
 end)
 
--------------------------------------------------
--- PC HIDE
--------------------------------------------------
-
 UIS.InputBegan:Connect(function(i,g)
-
 if g then return end
-
 if i.KeyCode==Enum.KeyCode.K then
 frame.Visible=not frame.Visible
 end
-
 end)
 
 -------------------------------------------------
--- FLY SYSTEM
+-- FLY
 -------------------------------------------------
 
-local control={F=0,B=0,L=0,R=0,U=0,D=0}
 local flyBV=nil
-
-UIS.InputBegan:Connect(function(i,g)
-if g then return end
-
-if i.KeyCode==Enum.KeyCode.W then control.F=1 end
-if i.KeyCode==Enum.KeyCode.S then control.B=-1 end
-if i.KeyCode==Enum.KeyCode.A then control.L=-1 end
-if i.KeyCode==Enum.KeyCode.D then control.R=1 end
-if i.KeyCode==Enum.KeyCode.Space then control.U=1 end
-if i.KeyCode==Enum.KeyCode.LeftShift then control.D=-1 end
-
-end)
-
-UIS.InputEnded:Connect(function(i)
-
-if i.KeyCode==Enum.KeyCode.W then control.F=0 end
-if i.KeyCode==Enum.KeyCode.S then control.B=0 end
-if i.KeyCode==Enum.KeyCode.A then control.L=0 end
-if i.KeyCode==Enum.KeyCode.D then control.R=0 end
-if i.KeyCode==Enum.KeyCode.Space then control.U=0 end
-if i.KeyCode==Enum.KeyCode.LeftShift then control.D=0 end
-
-end)
 
 RunService.Heartbeat:Connect(function()
 
@@ -197,14 +126,7 @@ flyBV.MaxForce=Vector3.new(1e9,1e9,1e9)
 flyBV.Parent=hrp
 end
 
-local cam=Camera.CFrame
-
-local move=
-(cam.LookVector*(control.F+control.B))+
-(cam.RightVector*(control.R+control.L))+
-(Vector3.new(0,1,0)*(control.U+control.D))
-
-flyBV.Velocity=move*Settings.FlySpeed
+flyBV.Velocity=Camera.CFrame.LookVector*Settings.FlySpeed
 
 end
 
@@ -239,42 +161,18 @@ end)
 -- ESP
 -------------------------------------------------
 
-local ESPFolder=Instance.new("Folder",game.CoreGui)
+spawn(function()
 
-local function CreateESP(player)
-
-if player==LP then return end
-
-local function add(char)
-
-local h=Instance.new("Highlight")
-h.Name=player.Name
-h.Parent=ESPFolder
-h.Adornee=char
-
-end
-
-if player.Character then
-add(player.Character)
-end
-
-player.CharacterAdded:Connect(add)
-
-end
+while task.wait(0.5) do
 
 for _,p in pairs(Players:GetPlayers()) do
-CreateESP(p)
-end
 
-Players.PlayerAdded:Connect(CreateESP)
+if p~=LP and p.Character and Settings.ESP then
 
-RunService.RenderStepped:Connect(function()
+if not p.Character:FindFirstChild("Highlight") then
 
-for _,h in pairs(ESPFolder:GetChildren()) do
-
-local p=Players:FindFirstChild(h.Name)
-
-if p and Settings.ESP then
+local h=Instance.new("Highlight")
+h.Parent=p.Character
 
 if p.Team==LP.Team then
 h.FillColor=Color3.fromRGB(0,255,0)
@@ -282,10 +180,10 @@ else
 h.FillColor=Color3.fromRGB(255,0,0)
 end
 
-h.Enabled=true
+end
 
-else
-h.Enabled=false
+end
+
 end
 
 end
@@ -343,10 +241,10 @@ RunService.RenderStepped:Connect(function()
 
 if Settings.Aimbot then
 
-local target=GetTarget()
+local t=GetTarget()
 
-if target then
-Camera.CFrame=CFrame.new(Camera.CFrame.Position,target.Position)
+if t then
+Camera.CFrame=CFrame.new(Camera.CFrame.Position,t.Position)
 end
 
 end
@@ -390,19 +288,3 @@ Toggle("Aimbot","Aimbot")
 Toggle("Silent Aim","SilentAim")
 Toggle("Wall Check","WallCheck")
 Toggle("Kill Check","KillCheck")
-
-Button("Fly Speed +",function()
-Settings.FlySpeed+=20
-end)
-
-Button("Fly Speed -",function()
-Settings.FlySpeed=math.max(20,Settings.FlySpeed-20)
-end)
-
-Button("FOV +",function()
-Settings.FOV+=10
-end)
-
-Button("FOV -",function()
-Settings.FOV=math.max(50,Settings.FOV-10)
-end)
